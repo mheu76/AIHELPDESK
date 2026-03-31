@@ -81,5 +81,67 @@ async def test_client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None
     app.dependency_overrides.clear()
 
 
-# Additional fixtures (test_user, admin_user, auth_headers) will be added
-# after User model and security module are implemented
+from app.models.user import User, UserRole
+from app.core.security import get_password_hash, create_access_token
+
+
+@pytest.fixture
+async def test_user(test_db: AsyncSession) -> User:
+    """Create a test employee user"""
+    user = User(
+        employee_id="TEST001",
+        email="test@company.com",
+        full_name="Test User",
+        hashed_password=get_password_hash("Test123!@#"),
+        role=UserRole.EMPLOYEE
+    )
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def admin_user(test_db: AsyncSession) -> User:
+    """Create a test admin user"""
+    user = User(
+        employee_id="ADMIN001",
+        email="admin@company.com",
+        full_name="Admin User",
+        hashed_password=get_password_hash("Admin123!@#"),
+        role=UserRole.ADMIN
+    )
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def it_staff_user(test_db: AsyncSession) -> User:
+    """Create a test IT staff user"""
+    user = User(
+        employee_id="IT001",
+        email="it@company.com",
+        full_name="IT Staff",
+        hashed_password=get_password_hash("IT123!@#"),
+        role=UserRole.IT_STAFF
+    )
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+    return user
+
+
+@pytest.fixture
+def auth_headers(test_user: User) -> dict:
+    """Create auth headers for test user"""
+    token = create_access_token({"sub": test_user.employee_id})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_headers(admin_user: User) -> dict:
+    """Create auth headers for admin user"""
+    token = create_access_token({"sub": admin_user.employee_id})
+    return {"Authorization": f"Bearer {token}"}
