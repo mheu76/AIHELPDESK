@@ -107,6 +107,6 @@ async def root():
     return {"message": "IT Helpdesk API", "docs": "/docs"}
 
 
-# API v1 routes will be added later
-# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-# app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
+# API v1 routes
+from app.api.v1 import api_router
+app.include_router(api_router, prefix="/api/v1")

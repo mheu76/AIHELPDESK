@@ -22,8 +22,7 @@ Base = declarative_base(metadata=metadata)
 # This ensures all models are registered before creating migrations
 def import_models():
     """Import all models for Alembic discovery"""
-    # Will import models when they are created
-    # from app.models import user  # noqa: F401
-    # from app.models import chat  # noqa: F401
-    # from app.models import ticket  # noqa: F401
-    pass
+    from app.models import user  # noqa: F401
+    from app.models import chat  # noqa: F401
+    from app.models import kb_document  # noqa: F401
+    # from app.models import ticket  # noqa: F401 (will be added in Sprint 3)
