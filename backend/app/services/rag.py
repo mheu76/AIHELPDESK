@@ -152,6 +152,11 @@ class RAGService:
         Returns:
             List of relevant document chunks with metadata
         """
+        # Return empty results if ChromaDB is not available
+        if self.chroma_client is None:
+            logger.warning("ChromaDB not available, returning empty search results")
+            return []
+
         if top_k is None:
             top_k = settings.RAG_TOP_K
 
