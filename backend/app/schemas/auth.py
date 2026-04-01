@@ -1,7 +1,7 @@
 """
 Pydantic schemas for authentication endpoints.
 """
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator, computed_field
 from typing import Optional
 from datetime import datetime
 import uuid
@@ -11,15 +11,23 @@ from app.models.user import UserRole
 
 class LoginRequest(BaseModel):
     """Login request schema"""
-    email: EmailStr = Field(..., description="User email address")
+    employee_id: Optional[str] = Field(None, min_length=3, max_length=20, description="Employee ID")
+    email: Optional[EmailStr] = Field(None, description="User email address")
     password: str = Field(..., min_length=8, description="User password")
+
+    @model_validator(mode="after")
+    def validate_identifier(self):
+        if not self.employee_id and not self.email:
+            raise ValueError("Either employee_id or email is required")
+        return self
 
 
 class RegisterRequest(BaseModel):
     """User registration request schema"""
     employee_id: str = Field(..., min_length=3, max_length=20, description="Employee ID")
     email: EmailStr = Field(..., description="Email address")
-    name: str = Field(..., min_length=2, max_length=100, description="Full name")
+    name: Optional[str] = Field(None, min_length=2, max_length=100, description="Full name")
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100, description="Full name")
     password: str = Field(..., min_length=8, description="Password")
     department: Optional[str] = Field(None, max_length=100, description="Department")
 
@@ -32,6 +40,14 @@ class RegisterRequest(BaseModel):
         # Add more validation if needed (uppercase, numbers, special chars)
         return v
 
+    @model_validator(mode="after")
+    def normalize_name(self):
+        self.name = self.name or self.full_name
+        self.full_name = self.full_name or self.name
+        if not self.name:
+            raise ValueError("name or full_name is required")
+        return self
+
 
 class TokenResponse(BaseModel):
     """JWT token response schema"""
@@ -39,6 +55,7 @@ class TokenResponse(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
+    user: Optional["UserResponse"] = Field(default=None, description="Authenticated user")
 
 
 class RefreshTokenRequest(BaseModel):
@@ -57,6 +74,11 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def full_name(self) -> str:
+        return self.name
 
     model_config = {
         "from_attributes": True

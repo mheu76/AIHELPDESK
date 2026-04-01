@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint": "tsc --noEmit --pretty false --incremental false -p tsconfig.typecheck.json",
+    "type-check": "tsc --noEmit --pretty false --incremental false -p tsconfig.typecheck.json"
   },
   "dependencies": {
     "next": "^14.1.0",

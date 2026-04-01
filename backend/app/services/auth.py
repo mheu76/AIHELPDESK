@@ -17,7 +17,7 @@ from app.core.security import (
     decode_token
 )
 from app.core.config import settings
-from app.core.exceptions import UnauthorizedError, ConflictError, NotFoundError
+from app.core.exceptions import UnauthorizedError, NotFoundError, BadRequestError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -29,7 +29,7 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def register_user(self, request: RegisterRequest) -> UserResponse:
+    async def register_user(self, request: RegisterRequest) -> User:
         """
         Register a new user.
 
@@ -47,8 +47,8 @@ class AuthService:
             select(User).where(User.email == request.email)
         )
         if result.scalar_one_or_none():
-            raise ConflictError(
-                message="Email already registered",
+            raise BadRequestError(
+                message="Email already exists",
                 error_code="EMAIL_EXISTS"
             )
 
@@ -57,8 +57,8 @@ class AuthService:
             select(User).where(User.employee_id == request.employee_id)
         )
         if result.scalar_one_or_none():
-            raise ConflictError(
-                message="Employee ID already registered",
+            raise BadRequestError(
+                message="Employee ID already exists",
                 error_code="EMPLOYEE_ID_EXISTS"
             )
 
@@ -78,9 +78,16 @@ class AuthService:
         await self.db.refresh(user)
 
         logger.info(f"User registered: {user.email}")
-        return UserResponse.model_validate(user)
+        return user
 
-    async def login(self, request: LoginRequest) -> TokenResponse:
+    async def login(
+        self,
+        request: Optional[LoginRequest] = None,
+        *,
+        employee_id: Optional[str] = None,
+        email: Optional[str] = None,
+        password: Optional[str] = None
+    ) -> TokenResponse:
         """
         Authenticate user and return JWT tokens.
 
@@ -93,16 +100,29 @@ class AuthService:
         Raises:
             UnauthorizedError: If credentials are invalid
         """
-        # Find user by email
-        result = await self.db.execute(
-            select(User).where(User.email == request.email)
-        )
+        if request is None:
+            request = LoginRequest(
+                employee_id=employee_id,
+                email=email,
+                password=password
+            )
+
+        if request.employee_id:
+            result = await self.db.execute(
+                select(User).where(User.employee_id == request.employee_id)
+            )
+            identifier = request.employee_id
+        else:
+            result = await self.db.execute(
+                select(User).where(User.email == request.email)
+            )
+            identifier = request.email
         user = result.scalar_one_or_none()
 
         if not user:
-            logger.warning(f"Login attempt with non-existent email: {request.email}")
+            logger.warning(f"Login attempt with non-existent user: {identifier}")
             raise UnauthorizedError(
-                message="Invalid email or password",
+                message="Invalid credentials",
                 error_code="INVALID_CREDENTIALS"
             )
 
@@ -110,7 +130,7 @@ class AuthService:
         if not verify_password(request.password, user.hashed_password):
             logger.warning(f"Failed login attempt for user: {user.email}")
             raise UnauthorizedError(
-                message="Invalid email or password",
+                message="Invalid credentials",
                 error_code="INVALID_CREDENTIALS"
             )
 
@@ -138,7 +158,8 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user=UserResponse.model_validate(user)
         )
 
     async def get_current_user(self, token: str) -> User:
@@ -170,18 +191,15 @@ class AuthService:
                 error_code="INVALID_TOKEN"
             )
 
-        # Get user from database
         try:
             user_uuid = uuid.UUID(user_id)
-        except ValueError:
-            raise UnauthorizedError(
-                message="Invalid user ID in token",
-                error_code="INVALID_TOKEN"
+            result = await self.db.execute(
+                select(User).where(User.id == user_uuid)
             )
-
-        result = await self.db.execute(
-            select(User).where(User.id == user_uuid)
-        )
+        except ValueError:
+            result = await self.db.execute(
+                select(User).where(User.employee_id == user_id)
+            )
         user = result.scalar_one_or_none()
 
         if not user:
@@ -223,7 +241,7 @@ class AuthService:
         # Verify token type
         if payload.get("type") != "refresh":
             raise UnauthorizedError(
-                message="Invalid token type",
+                message="Invalid refresh token",
                 error_code="INVALID_TOKEN_TYPE"
             )
 

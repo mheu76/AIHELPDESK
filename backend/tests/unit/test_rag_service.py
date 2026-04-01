@@ -83,12 +83,11 @@ class TestRAGServiceUpload:
         """Should reject unsupported file types"""
         rag_service = RAGService(test_db)
         
-        # PDF format not supported yet
-        with pytest.raises(BadRequestError, match="file type"):
+        with pytest.raises(BadRequestError, match="Unsupported file format"):
             await rag_service.upload_document(
-                content=b"PDF content",
-                file_name="document.pdf",
-                title="PDF Document",
+                content=b"spreadsheet content",
+                file_name="document.xlsx",
+                title="Spreadsheet Document",
                 created_by_id=admin_user.id
             )
     

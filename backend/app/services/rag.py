@@ -1,9 +1,9 @@
 """
 RAG (Retrieval-Augmented Generation) service for knowledge base management.
 """
-from typing import List, Dict, Any, Optional, BinaryIO
+from typing import List, Dict, Any, Optional, Union
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 try:
     import chromadb
     from chromadb.config import Settings
@@ -18,6 +18,7 @@ from app.models.user import User
 from app.core.config import settings
 from app.core.exceptions import NotFoundError, BadRequestError
 from app.core.logging import get_logger
+from app.utils.document_parser import DocumentParser
 
 logger = get_logger(__name__)
 
@@ -53,17 +54,20 @@ class RAGService:
     async def upload_document(
         self,
         file_name: str,
-        file_content: str,
-        file_type: str,
-        title: Optional[str],
-        user: User
+        file_content: Optional[Union[str, bytes]] = None,
+        file_type: Optional[str] = None,
+        title: Optional[str] = None,
+        user: Optional[User] = None,
+        *,
+        content: Optional[str] = None,
+        created_by_id: Optional[uuid.UUID] = None
     ) -> KBDocument:
         """
         Upload and process a document into the knowledge base.
 
         Args:
             file_name: Original file name
-            file_content: File content as text
+            file_content: File content as bytes or text
             file_type: File type (pdf, docx, txt, md)
             title: Optional document title (defaults to file_name)
             user: User uploading the document
@@ -74,11 +78,47 @@ class RAGService:
         Raises:
             BadRequestError: If file is empty or invalid
         """
-        if not file_content.strip():
+        file_content = file_content if file_content is not None else content
+
+        # Parse document content if bytes
+        if isinstance(file_content, bytes):
+            # Validate file format
+            if not DocumentParser.is_supported(file_name):
+                raise BadRequestError(
+                    message=f"Unsupported file format. Supported: {', '.join(DocumentParser.SUPPORTED_FORMATS)}",
+                    error_code="UNSUPPORTED_FILE_TYPE"
+                )
+
+            try:
+                parsed_text = DocumentParser.parse(file_name, file_content)
+            except ValueError as e:
+                raise BadRequestError(
+                    message=str(e),
+                    error_code="UNSUPPORTED_FILE_TYPE"
+                )
+            except ImportError as e:
+                raise BadRequestError(
+                    message=f"Required library not installed: {str(e)}",
+                    error_code="PARSER_LIBRARY_MISSING"
+                )
+            except Exception as e:
+                raise BadRequestError(
+                    message=f"Failed to parse document: {str(e)}",
+                    error_code="PARSING_FAILED"
+                )
+
+            file_content = parsed_text
+
+        if file_content is None or not file_content.strip():
             raise BadRequestError(
-                message="File content is empty",
+                message="File content is empty or could not be extracted",
                 error_code="EMPTY_FILE"
             )
+
+        if file_type is None:
+            file_type = DocumentParser.get_file_type(file_name)
+
+        uploader_id = user.id if user else created_by_id
 
         # Use file_name as title if not provided
         if not title:
@@ -94,28 +134,26 @@ class RAGService:
 
         logger.info(f"Chunked document '{title}' into {len(chunks)} chunks")
 
-        # Store chunks in ChromaDB
-        collection = self._get_collection()
         doc_id = str(uuid.uuid4())
         chroma_ids = []
-
-        for i, chunk in enumerate(chunks):
-            chunk_id = f"{doc_id}_chunk_{i}"
-            chroma_ids.append(chunk_id)
-
-            collection.add(
-                documents=[chunk],
-                ids=[chunk_id],
-                metadatas=[{
-                    "document_id": doc_id,
-                    "title": title,
-                    "chunk_index": i,
-                    "file_type": file_type,
-                    "file_name": file_name
-                }]
-            )
-
-        logger.info(f"Stored {len(chroma_ids)} chunks in ChromaDB")
+        if self.chroma_client is not None:
+            collection = self._get_collection()
+            for i, chunk in enumerate(chunks):
+                chunk_id = f"{doc_id}_chunk_{i}"
+                chroma_ids.append(chunk_id)
+                collection.add(
+                    documents=[chunk],
+                    ids=[chunk_id],
+                    metadatas=[{
+                        "document_id": doc_id,
+                        "id": doc_id,
+                        "title": title,
+                        "chunk_index": i,
+                        "file_type": file_type,
+                        "file_name": file_name
+                    }]
+                )
+            logger.info(f"Stored {len(chroma_ids)} chunks in ChromaDB")
 
         # Create database record
         kb_doc = KBDocument(
@@ -123,10 +161,11 @@ class RAGService:
             title=title,
             file_name=file_name,
             file_type=file_type,
+            content=file_content,
             file_size=len(file_content.encode('utf-8')),
             chunk_count=len(chunks),
-            chroma_ids=chroma_ids,
-            uploaded_by=user.id,
+            chroma_ids=chroma_ids or None,
+            uploaded_by=uploader_id,
             is_active=True
         )
 
@@ -152,41 +191,66 @@ class RAGService:
         Returns:
             List of relevant document chunks with metadata
         """
-        # Return empty results if ChromaDB is not available
-        if self.chroma_client is None:
-            logger.warning("ChromaDB not available, returning empty search results")
-            return []
-
         if top_k is None:
             top_k = settings.RAG_TOP_K
 
-        collection = self._get_collection()
+        if self.chroma_client is not None:
+            collection = self._get_collection()
 
-        try:
-            results = collection.query(
-                query_texts=[query],
-                n_results=top_k
+            try:
+                results = collection.query(
+                    query_texts=[query],
+                    n_results=top_k
+                )
+
+                documents = []
+                if results["documents"] and results["documents"][0]:
+                    for i, doc in enumerate(results["documents"][0]):
+                        metadata = results["metadatas"][0][i] if results["metadatas"] else {}
+                        distance = results["distances"][0][i] if results["distances"] else None
+                        documents.append({
+                            "content": doc,
+                            "metadata": metadata,
+                            "relevance_score": 1 - distance if distance is not None else None
+                        })
+
+                if documents:
+                    logger.info(f"Found {len(documents)} relevant documents for query")
+                    return documents
+            except Exception as e:
+                logger.error(f"Error searching ChromaDB: {str(e)}")
+
+        query_terms = [term for term in re.split(r"\s+", query.strip()) if term]
+        like_clauses = []
+        for term in query_terms or [query]:
+            like_query = f"%{term}%"
+            like_clauses.extend([
+                KBDocument.title.ilike(like_query),
+                KBDocument.content.ilike(like_query)
+            ])
+        result = await self.db.execute(
+            select(KBDocument)
+            .where(
+                KBDocument.is_active == True,
+                or_(*like_clauses)
             )
-
-            # Format results
-            documents = []
-            if results['documents'] and results['documents'][0]:
-                for i, doc in enumerate(results['documents'][0]):
-                    metadata = results['metadatas'][0][i] if results['metadatas'] else {}
-                    distance = results['distances'][0][i] if results['distances'] else None
-
-                    documents.append({
-                        "content": doc,
-                        "metadata": metadata,
-                        "relevance_score": 1 - distance if distance else None  # Convert distance to similarity
-                    })
-
-            logger.info(f"Found {len(documents)} relevant documents for query")
-            return documents
-
-        except Exception as e:
-            logger.error(f"Error searching ChromaDB: {str(e)}")
-            return []
+            .order_by(desc(KBDocument.created_at))
+            .limit(top_k)
+        )
+        documents = []
+        for doc in result.scalars().all():
+            documents.append({
+                "content": doc.content or "",
+                "metadata": {
+                    "id": str(doc.id),
+                    "document_id": str(doc.id),
+                    "title": doc.title,
+                    "file_type": doc.file_type,
+                    "file_name": doc.file_name
+                },
+                "relevance_score": 1.0
+            })
+        return documents
 
     async def list_documents(
         self,
@@ -254,7 +318,7 @@ class RAGService:
         doc = await self.get_document(doc_id)
 
         # Delete from ChromaDB
-        if doc.chroma_ids:
+        if doc.chroma_ids and self.chroma_client is not None:
             collection = self._get_collection()
             try:
                 collection.delete(ids=doc.chroma_ids)

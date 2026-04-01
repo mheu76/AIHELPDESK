@@ -13,7 +13,8 @@ from app.schemas.chat import (
     ChatResponse,
     SessionListResponse,
     SessionDetailResponse,
-    SessionResponse
+    SessionResponse,
+    SessionResolveRequest
 )
 from app.models.user import User
 from app.core.llm import LLMBase
@@ -100,7 +101,7 @@ async def get_session_detail(
 )
 async def update_session_resolution(
     session_id: uuid.UUID,
-    is_resolved: bool = Query(..., description="Resolution status"),
+    request: SessionResolveRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     llm: LLMBase = Depends(get_llm)
@@ -115,5 +116,5 @@ async def update_session_resolution(
     return await chat_service.mark_session_resolved(
         session_id=session_id,
         user_id=current_user.id,
-        is_resolved=is_resolved
+        is_resolved=request.is_resolved
     )

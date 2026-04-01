@@ -74,6 +74,11 @@ class SessionDetailResponse(BaseModel):
     }
 
 
+class SessionResolveRequest(BaseModel):
+    """Resolution update request."""
+    is_resolved: bool = Field(..., description="Whether the session is resolved")
+
+
 class CreateTicketRequest(BaseModel):
     """Request to create a ticket from chat session"""
     session_id: uuid.UUID = Field(..., description="Chat session ID")

@@ -28,7 +28,7 @@ class HelpDeskException(Exception):
         return {
             "error_code": self.error_code,
             "message": self.message,
-            "detail": self.detail if self.detail else None
+            "detail": self.detail if self.detail else self.message
         }
 
 

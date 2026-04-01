@@ -2,16 +2,22 @@
 Pytest configuration and fixtures.
 Provides reusable test infrastructure.
 """
+import os
 import pytest
 import asyncio
 from typing import AsyncGenerator, Generator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient, ASGITransport
+
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key-anthropic")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-pytest-only-123456")
 
 from app.main import app
 from app.db.base import Base, import_models
 from app.db.session import get_db
+from app.api.v1.deps import get_llm, StubLLM
 
 # Test database URL (SQLite in-memory)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -38,7 +44,8 @@ async def test_db() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=False,
-        poolclass=NullPool,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
     )
 
     # Create tables
@@ -71,6 +78,10 @@ async def test_client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None
         yield test_db
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_llm] = lambda: StubLLM(
+        api_key="test-key-anthropic",
+        model="test-model"
+    )
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -79,6 +90,12 @@ async def test_client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None
         yield client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def client(test_client: AsyncClient) -> AsyncGenerator[AsyncClient, None]:
+    """Backward-compatible alias for tests that expect `client`."""
+    yield test_client
 
 
 from app.models.user import User, UserRole
@@ -145,6 +162,18 @@ def admin_headers(admin_user: User) -> dict:
     """Create auth headers for admin user"""
     token = create_access_token({"sub": admin_user.employee_id})
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def test_user_token(test_user: User) -> str:
+    """Access token for the standard employee test user."""
+    return create_access_token({"sub": test_user.employee_id})
+
+
+@pytest.fixture
+async def admin_user_token(admin_user: User) -> str:
+    """Access token for the admin test user."""
+    return create_access_token({"sub": admin_user.employee_id})
 
 
 # ============================================================

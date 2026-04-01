@@ -48,7 +48,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    subject: str,
+    subject: str | Dict[str, Any],
     expires_delta: Optional[timedelta] = None,
     additional_claims: Optional[Dict[str, Any]] = None
 ) -> str:
@@ -70,11 +70,18 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    to_encode = {
-        "exp": expire,
-        "sub": str(subject),
-        "type": "access"
-    }
+    if isinstance(subject, dict):
+        to_encode = {
+            "exp": expire,
+            "type": "access",
+            **subject
+        }
+    else:
+        to_encode = {
+            "exp": expire,
+            "sub": str(subject),
+            "type": "access"
+        }
 
     # Add additional claims if provided
     if additional_claims:

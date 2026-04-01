@@ -50,3 +50,12 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+
+    @property
+    def full_name(self) -> str:
+        """Backward-compatible alias used by older tests and clients."""
+        return self.name
+
+    @full_name.setter
+    def full_name(self, value: str) -> None:
+        self.name = value

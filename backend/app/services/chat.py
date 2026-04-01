@@ -133,8 +133,8 @@ Use the above information to help answer the user's question. If the context is 
             )
             self.db.add(ai_message)
 
-            # Generate title for new sessions (from first user message)
-            if not session.title and len(messages) == 1:
+            # Generate title when starting a new session.
+            if not session.title and request.session_id is None:
                 session.title = await self._generate_session_title(request.message)
 
             await self.db.commit()

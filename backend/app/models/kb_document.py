@@ -20,6 +20,7 @@ class KBDocument(Base):
     title = Column(String(500), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_type = Column(String(20), nullable=False)  # pdf, docx, txt, md
+    content = Column(Text, nullable=True)
     file_size = Column(Integer, nullable=True)  # bytes
     chunk_count = Column(Integer, default=0, nullable=False)  # Number of chunks in ChromaDB
     chroma_ids = Column(JSON, nullable=True)  # ChromaDB document IDs
@@ -32,3 +33,20 @@ class KBDocument(Base):
 
     def __repr__(self) -> str:
         return f"<KBDocument(id={self.id}, title={self.title}, chunks={self.chunk_count})>"
+
+    @property
+    def created_by_id(self):
+        """Backward-compatible alias used by older tests and clients."""
+        return self.uploaded_by
+
+    @created_by_id.setter
+    def created_by_id(self, value) -> None:
+        self.uploaded_by = value
+
+    @property
+    def is_deleted(self) -> bool:
+        return not self.is_active
+
+    @is_deleted.setter
+    def is_deleted(self, value: bool) -> None:
+        self.is_active = not value

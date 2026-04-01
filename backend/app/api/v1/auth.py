@@ -39,7 +39,8 @@ async def register(
     - **department**: Optional department
     """
     auth_service = AuthService(db)
-    return await auth_service.register_user(request)
+    user = await auth_service.register_user(request)
+    return UserResponse.model_validate(user)
 
 
 @router.post(

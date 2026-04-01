@@ -58,7 +58,7 @@ async def validation_exception_handler(
     )
 
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error_code": "VALIDATION_ERROR",
             "message": "요청 데이터가 유효하지 않습니다.",

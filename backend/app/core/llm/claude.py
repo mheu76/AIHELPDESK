@@ -83,8 +83,11 @@ class ClaudeLLM(LLMBase):
             return {
                 "content": response.content[0].text,
                 "role": "assistant",
+                "model": response.model,
                 "usage": {
+                    "input_tokens": response.usage.input_tokens,
                     "prompt_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens,
                     "completion_tokens": response.usage.output_tokens,
                     "total_tokens": response.usage.input_tokens + response.usage.output_tokens
                 }
