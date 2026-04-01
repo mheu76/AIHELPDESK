@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.config import settings
 from app.core.llm import LLMFactory, LLMBase
+from app.services.settings import SettingsService
 
 # Security scheme
 security = HTTPBearer()
@@ -60,6 +61,7 @@ class StubLLM(LLMBase):
 def get_llm() -> LLMBase:
     """
     Get LLM instance based on configuration.
+    Uses runtime settings from SettingsService if available, falls back to environment config.
 
     Returns:
         LLM instance (Claude, OpenAI, etc.)
@@ -67,24 +69,28 @@ def get_llm() -> LLMBase:
     Raises:
         ValueError: If LLM provider is not configured
     """
-    if settings.LLM_PROVIDER == "claude":
+    # Get runtime settings (may be overridden by admin)
+    provider = SettingsService.get_current_llm_provider()
+    model = SettingsService.get_current_llm_model()
+
+    if provider == "claude":
         if not settings.ANTHROPIC_API_KEY:
             raise ValueError("ANTHROPIC_API_KEY is required for Claude provider")
         api_key = settings.ANTHROPIC_API_KEY
-    elif settings.LLM_PROVIDER == "openai":
+    elif provider == "openai":
         if not settings.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
         api_key = settings.OPENAI_API_KEY
     else:
-        raise ValueError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
+        raise ValueError(f"Unsupported LLM provider: {provider}")
 
     if "test-key" in api_key:
-        return StubLLM(api_key=api_key, model=settings.LLM_MODEL if settings.LLM_MODEL else None)
+        return StubLLM(api_key=api_key, model=model)
 
     return LLMFactory.create(
-        provider=settings.LLM_PROVIDER,
+        provider=provider,
         api_key=api_key,
-        model=settings.LLM_MODEL if settings.LLM_MODEL else None
+        model=model
     )
 
 

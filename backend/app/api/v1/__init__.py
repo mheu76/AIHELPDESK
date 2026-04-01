@@ -2,7 +2,7 @@
 API v1 routes.
 """
 from fastapi import APIRouter
-from app.api.v1 import auth, chat, kb, ticket
+from app.api.v1 import auth, chat, kb, ticket, admin
 
 api_router = APIRouter()
 
@@ -11,3 +11,4 @@ api_router.include_router(auth.router)
 api_router.include_router(chat.router)
 api_router.include_router(kb.router)
 api_router.include_router(ticket.router)
+api_router.include_router(admin.router)

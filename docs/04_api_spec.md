@@ -272,7 +272,135 @@ Response 필드:
 - `tickets_by_priority`
 - `avg_resolution_time_hours`
 
-## 5. 에러 응답
+## 5. Admin
+
+### GET `/admin/dashboard`
+
+권한: `admin`
+
+시스템 전체 통계 조회.
+
+Response `200`:
+
+```json
+{
+  "total_users": 50,
+  "active_users": 48,
+  "total_sessions": 1234,
+  "total_tickets": 567,
+  "total_kb_documents": 89,
+  "llm_provider": "claude",
+  "recent_activities": [
+    {
+      "type": "ticket_created",
+      "user_id": "uuid",
+      "user_name": "John Doe",
+      "timestamp": "2026-04-02T10:00:00Z",
+      "description": "Ticket #123 created"
+    }
+  ]
+}
+```
+
+### GET `/admin/users`
+
+권한: `admin`
+
+사용자 목록 조회.
+
+Query:
+
+- `role` (employee|it_staff|admin)
+- `is_active` (true|false)
+- `page` default `1`
+- `page_size` default `50`
+
+Response `200`:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "employee_id": "EMP001",
+      "email": "user@company.com",
+      "full_name": "Test User",
+      "role": "employee",
+      "department": "IT",
+      "is_active": true,
+      "created_at": "2026-04-01T00:00:00Z"
+    }
+  ],
+  "total": 50,
+  "page": 1,
+  "page_size": 50,
+  "total_pages": 1
+}
+```
+
+### GET `/admin/users/{user_id}`
+
+권한: `admin`
+
+사용자 상세 조회.
+
+### PATCH `/admin/users/{user_id}`
+
+권한: `admin`
+
+사용자 정보 수정.
+
+Request:
+
+```json
+{
+  "role": "it_staff",
+  "department": "IT Support",
+  "is_active": true
+}
+```
+
+### GET `/admin/settings`
+
+권한: `admin`
+
+시스템 설정 조회.
+
+Response `200`:
+
+```json
+{
+  "llm_provider": "claude",
+  "llm_model": "claude-3-5-sonnet-20241022",
+  "llm_temperature": 0.7,
+  "max_tokens": 4096,
+  "rag_enabled": true,
+  "rag_top_k": 5
+}
+```
+
+### PATCH `/admin/settings`
+
+권한: `admin`
+
+시스템 설정 변경.
+
+Request:
+
+```json
+{
+  "llm_provider": "openai",
+  "llm_model": "gpt-4",
+  "llm_temperature": 0.8
+}
+```
+
+주의:
+
+- `llm_provider` 변경 시 즉시 적용됨
+- 지원 provider: `claude`, `openai`
+
+## 6. 에러 응답
 
 일반 형식:
 
