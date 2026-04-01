@@ -1,180 +1,63 @@
-# IT Helpdesk Frontend
+# Frontend
 
-Next.js 14-based frontend application for IT AI Helpdesk system.
+Next.js 14 App Router 기반 프론트엔드입니다.
 
-## Setup
+## 현재 구현 화면
 
-### 1. Install Dependencies
+- `/auth/login`
+- `/auth/register`
+- `/chat`
+- `/tickets`
+- `/tickets/[id]`
+- `/kb`
+
+루트 `/`는 `/auth/login`으로 리다이렉트됩니다.
+
+## 실행
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-### 2. Configure Environment
+또는 루트에서 Docker:
 
-Create a `.env.local` file:
+```bash
+docker compose up --build
+```
+
+## 환경 변수
+
+필수:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 ```
 
-## Running the Application
+## 현재 프론트 기능
 
-### Development Server
+- 로그인/회원가입
+- 토큰 기반 인증 상태 유지
+- 채팅 세션 목록 및 대화 화면
+- 채팅에서 티켓 생성
+- 티켓 목록 필터링
+- 티켓 상세 조회 및 댓글 작성
+- IT 담당자의 빠른 티켓 처리 버튼
+- KB 문서 업로드, 검색, 상세 조회, 삭제
 
-```bash
-cd frontend
-npm run dev
-```
+## 현재 제약
 
-The application will be available at http://localhost:3000
+- 관리자 대시보드 화면은 아직 없음
+- 채팅 응답은 단건 응답 방식이며 SSE 스트리밍 UI는 아직 없음
+- 일부 화면 문자열은 한글 인코딩 정리가 더 필요함
+- 타입 일부는 백엔드 응답 구조와 완전히 일치하지 않는 호환 필드를 포함함
 
-### Production Build
+## 주요 파일
 
-```bash
-npm run build
-npm start
-```
-
-## Project Structure
-
-```
-frontend/
-├── lib/                   # Core utilities (harness)
-│   ├── api.ts            # API client with auth
-│   └── auth.ts           # Auth helpers
-├── components/            # React components
-│   └── ErrorBoundary.tsx # Global error handler
-├── app/                   # Next.js App Router pages (to be added)
-├── package.json
-├── tsconfig.json
-└── next.config.js
-```
-
-## Harness Features
-
-The frontend harness provides:
-
-✅ **API Client** - Centralized API calls with automatic token injection
-✅ **Error Handling** - Custom APIError class with error codes
-✅ **Auth Helpers** - Token management and authentication state
-✅ **Error Boundary** - Global React error catching
-✅ **TypeScript** - Type-safe API calls and state management
-✅ **SSE Streaming** - Async generator for real-time chat responses
-
-## API Client Usage
-
-### Login Example
-
-```typescript
-import { api, APIError } from '@/lib/api';
-import { saveAuthState } from '@/lib/auth';
-
-try {
-  const result = await api.auth.login('user@company.com', 'password');
-  saveAuthState({
-    user: result.user,
-    accessToken: result.access_token,
-    refreshToken: result.refresh_token,
-  });
-  console.log('Login success:', result.user);
-} catch (error) {
-  if (error instanceof APIError) {
-    console.error(`[${error.errorCode}]:`, error.message);
-  }
-}
-```
-
-### Chat Streaming Example
-
-```typescript
-import { api } from '@/lib/api';
-
-const sessionId = 'some-session-id';
-
-for await (const event of api.chat.streamMessage(sessionId, 'Hello AI')) {
-  if (event.type === 'token') {
-    console.log('Token:', event.content);
-  } else if (event.type === 'done') {
-    console.log('Message complete:', event.message_id);
-  }
-}
-```
-
-## Error Boundary Usage
-
-Wrap your app with ErrorBoundary:
-
-```typescript
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="ko">
-      <body>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-      </body>
-    </html>
-  );
-}
-```
-
-## Authentication Flow
-
-1. User logs in → `api.auth.login()`
-2. Save tokens → `saveAuthState()`
-3. API client auto-injects token in subsequent requests
-4. On 401 error → Refresh token or redirect to login
-
-## Next Steps
-
-After the harness is complete, the next implementation steps are:
-
-1. **App Router Pages** - Create login, chat, tickets pages
-2. **UI Components** - Chat bubbles, ticket cards, forms
-3. **State Management** - Zustand for global state
-4. **Styling** - Tailwind CSS and shadcn/ui components
-5. **Real-time Features** - SSE event handling for chat
-
-## Type Safety
-
-All API calls are type-safe:
-
-```typescript
-// TypeScript knows the response shape
-const response: LoginResponse = await api.auth.login(email, password);
-console.log(response.user.name); // ✅ Type-safe
-
-const sessions = await api.chat.getSessions();
-sessions.sessions.forEach(s => {
-  console.log(s.title); // ✅ Type-safe
-});
-```
-
-## Troubleshooting
-
-### API Connection Issues
-
-Make sure backend is running:
-```bash
-curl http://localhost:8080/health
-```
-
-Check NEXT_PUBLIC_API_URL in `.env.local`
-
-### CORS Errors
-
-Backend must include frontend URL in ALLOWED_ORIGINS:
-```env
-ALLOWED_ORIGINS=["http://localhost:3000"]
-```
-
-### TypeScript Errors
-
-Run type checking:
-```bash
-npm run type-check
-```
+- [frontend/lib/api.ts](/D:/DEV/AIhelpdesk/frontend/lib/api.ts)
+- [frontend/lib/auth.ts](/D:/DEV/AIhelpdesk/frontend/lib/auth.ts)
+- [frontend/app/chat/page.tsx](/D:/DEV/AIhelpdesk/frontend/app/chat/page.tsx)
+- [frontend/app/tickets/page.tsx](/D:/DEV/AIhelpdesk/frontend/app/tickets/page.tsx)
+- [frontend/app/tickets/[id]/page.tsx](/D:/DEV/AIhelpdesk/frontend/app/tickets/[id]/page.tsx)
+- [frontend/app/kb/page.tsx](/D:/DEV/AIhelpdesk/frontend/app/kb/page.tsx)

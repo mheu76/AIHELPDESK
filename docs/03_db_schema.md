@@ -1,186 +1,175 @@
-# 03. DB 스키마
+# 03. DB Schema
 
-> RDBMS: PostgreSQL 15+
-> ORM: SQLAlchemy (async) + Alembic (migration)
+기준 구현: SQLAlchemy async + Alembic
 
----
+## 현재 핵심 테이블
 
-## 1. ERD 개요
+- `users`
+- `chat_sessions`
+- `chat_messages`
+- `kb_documents`
+- `tickets`
+- `ticket_comments`
 
-```
-users ──────────────┐
-  │                 │
-  ├── chat_sessions │
-  │     └── chat_messages
-  │                 │
-  └── tickets ◀─────┘
-        └── ticket_comments
-```
+## users
 
----
+사용자 계정과 역할 정보.
 
-## 2. 테이블 정의
+주요 컬럼:
 
-### 2-1. users (사용자)
+- `id` UUID PK
+- `employee_id` unique
+- `email` unique
+- `name`
+- `hashed_password`
+- `role`
+- `department`
+- `is_active`
+- `created_at`
+- `updated_at`
 
-```sql
-CREATE TABLE users (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id     VARCHAR(20) UNIQUE NOT NULL,   -- 사번
-    email           VARCHAR(255) UNIQUE NOT NULL,
-    name            VARCHAR(100) NOT NULL,
-    role            VARCHAR(20) NOT NULL DEFAULT 'employee',
-                    -- employee | it_staff | admin
-    department      VARCHAR(100),
-    is_active       BOOLEAN DEFAULT TRUE,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+역할 값:
 
----
+- `employee`
+- `it_staff`
+- `admin`
 
-### 2-2. chat_sessions (채팅 세션)
+## chat_sessions
 
-```sql
-CREATE TABLE chat_sessions (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id         UUID NOT NULL REFERENCES users(id),
-    title           VARCHAR(255),                  -- AI가 자동 생성 (첫 질문 기반)
-    is_resolved     BOOLEAN DEFAULT FALSE,         -- AI 해결 여부
-    ticket_id       UUID REFERENCES tickets(id),   -- 티켓 전환 시 연결
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+사용자별 대화 세션.
 
----
+주요 컬럼:
 
-### 2-3. chat_messages (채팅 메시지)
+- `id` UUID PK
+- `user_id` FK -> `users.id`
+- `title`
+- `is_resolved`
+- `created_at`
+- `updated_at`
 
-```sql
-CREATE TABLE chat_messages (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id      UUID NOT NULL REFERENCES chat_sessions(id),
-    role            VARCHAR(20) NOT NULL,          -- user | assistant
-    content         TEXT NOT NULL,
-    token_count     INTEGER,                       -- LLM 토큰 사용량 추적
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+참고:
 
-CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
-```
+- 현재 모델에는 `ticket_id` 컬럼이 없고, 티켓 쪽에서 `session_id`를 참조합니다.
 
----
+## chat_messages
 
-### 2-4. tickets (티켓)
+대화 메시지 저장.
 
-```sql
-CREATE TABLE tickets (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_number   SERIAL UNIQUE,                 -- T-000001 형식 표시용
-    title           VARCHAR(500) NOT NULL,         -- AI 자동 생성
-    description     TEXT NOT NULL,                 -- AI 요약 내용
-    category        VARCHAR(50) NOT NULL,
-                    -- account | device | network | system | security | other
-    status          VARCHAR(20) NOT NULL DEFAULT 'open',
-                    -- open | in_progress | resolved | on_hold | closed
-    priority        VARCHAR(20) DEFAULT 'medium',  -- low | medium | high | urgent
-    requester_id    UUID NOT NULL REFERENCES users(id),
-    assignee_id     UUID REFERENCES users(id),     -- IT 담당자
-    session_id      UUID REFERENCES chat_sessions(id),
-    resolved_at     TIMESTAMP WITH TIME ZONE,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+주요 컬럼:
 
-CREATE INDEX idx_tickets_status ON tickets(status);
-CREATE INDEX idx_tickets_assignee_id ON tickets(assignee_id);
-CREATE INDEX idx_tickets_requester_id ON tickets(requester_id);
-```
+- `id` UUID PK
+- `session_id` FK -> `chat_sessions.id`
+- `role`
+- `content`
+- `token_count`
+- `created_at`
 
----
+역할 값 예시:
 
-### 2-5. ticket_comments (티켓 코멘트)
+- `user`
+- `assistant`
+- `system`
 
-```sql
-CREATE TABLE ticket_comments (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_id       UUID NOT NULL REFERENCES tickets(id),
-    author_id       UUID NOT NULL REFERENCES users(id),
-    content         TEXT NOT NULL,
-    is_internal     BOOLEAN DEFAULT FALSE,         -- 내부 메모 (임직원 비공개)
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+## kb_documents
 
----
+지식베이스 문서 메타데이터와 본문 저장.
 
-### 2-6. kb_documents (KB 문서)
+주요 컬럼:
 
-```sql
-CREATE TABLE kb_documents (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title           VARCHAR(500) NOT NULL,
-    file_name       VARCHAR(255) NOT NULL,
-    file_type       VARCHAR(20) NOT NULL,          -- pdf | docx | txt | md
-    file_size       INTEGER,                       -- bytes
-    chunk_count     INTEGER DEFAULT 0,             -- ChromaDB 청크 수
-    chroma_ids      TEXT[],                        -- ChromaDB document IDs
-    uploaded_by     UUID REFERENCES users(id),
-    is_active       BOOLEAN DEFAULT TRUE,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+- `id` UUID PK
+- `title`
+- `file_name`
+- `file_type`
+- `content`
+- `file_size`
+- `chunk_count`
+- `chroma_ids` JSON
+- `uploaded_by` FK -> `users.id`
+- `is_active`
+- `created_at`
 
----
+참고:
 
-### 2-7. system_settings (시스템 설정)
+- ChromaDB가 연결되면 청크 ID를 `chroma_ids`에 저장합니다.
+- soft delete는 `is_active = false`로 처리합니다.
 
-```sql
-CREATE TABLE system_settings (
-    key             VARCHAR(100) PRIMARY KEY,
-    value           TEXT NOT NULL,
-    description     VARCHAR(500),
-    updated_by      UUID REFERENCES users(id),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## tickets
 
--- 초기 데이터
-INSERT INTO system_settings (key, value, description) VALUES
-('llm_provider', 'claude', 'LLM Provider: claude | openai'),
-('llm_model', 'claude-sonnet-4-20250514', 'LLM 모델명'),
-('rag_top_k', '3', 'RAG 검색 결과 수'),
-('max_conversation_turns', '10', '대화 맥락 유지 턴 수');
-```
+헬프데스크 티켓 본문.
 
----
+주요 컬럼:
 
-## 3. ChromaDB 컬렉션
+- `id` UUID PK
+- `ticket_number` unique
+- `title`
+- `description`
+- `category`
+- `status`
+- `priority`
+- `requester_id` FK -> `users.id`
+- `assignee_id` FK -> `users.id`
+- `session_id` FK -> `chat_sessions.id`
+- `resolved_at`
+- `created_at`
+- `updated_at`
 
-```python
-# 컬렉션명: it_knowledge_base
-# 메타데이터 구조:
-{
-    "document_id": "uuid",          # kb_documents.id
-    "title": "문서 제목",
-    "chunk_index": 0,               # 청크 순서
-    "file_type": "pdf",
-    "created_at": "2025-01-01"
-}
+카테고리:
+
+- `account`
+- `device`
+- `network`
+- `system`
+- `security`
+- `other`
+
+상태:
+
+- `open`
+- `in_progress`
+- `resolved`
+- `on_hold`
+- `closed`
+
+우선순위:
+
+- `low`
+- `medium`
+- `high`
+- `urgent`
+
+## ticket_comments
+
+티켓 댓글 및 내부 메모.
+
+주요 컬럼:
+
+- `id` UUID PK
+- `ticket_id` FK -> `tickets.id`
+- `author_id` FK -> `users.id`
+- `content`
+- `is_internal`
+- `created_at`
+
+## 관계 요약
+
+```text
+users 1---N chat_sessions
+chat_sessions 1---N chat_messages
+users 1---N kb_documents
+users 1---N tickets (requester)
+users 1---N tickets (assignee)
+chat_sessions 1---0..1 tickets
+tickets 1---N ticket_comments
+users 1---N ticket_comments
 ```
 
----
+## 마이그레이션
 
-## 4. 마이그레이션 전략
+초기 스키마 적용:
 
 ```bash
-# 초기 마이그레이션
-alembic init migrations
-alembic revision --autogenerate -m "initial schema"
-alembic upgrade head
-
-# 스키마 변경 시
-alembic revision --autogenerate -m "description"
+cd backend
 alembic upgrade head
 ```
+
+현재 Alembic 초기 마이그레이션은 위 6개 테이블을 생성하도록 정리되어 있습니다.

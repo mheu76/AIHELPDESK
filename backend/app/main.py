@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
 
-    if settings.is_development:
-        # Initialize DB in development (use Alembic in production)
+    if settings.is_development and settings.DATABASE_URL.startswith("sqlite"):
+        # Keep automatic table creation only for local SQLite development.
         await init_db()
 
     yield

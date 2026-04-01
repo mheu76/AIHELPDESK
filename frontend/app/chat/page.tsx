@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { chatApi, ApiError, type ChatSession, type ChatMessage } from "@/lib/api"
+import { useRouter } from "next/navigation"
+import { chatApi, ticketApi, ApiError, type ChatSession, type ChatMessage } from "@/lib/api"
 
 export default function ChatPage() {
+  const router = useRouter()
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -11,6 +13,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState("")
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load sessions on mount
@@ -95,6 +98,31 @@ export default function ChatPage() {
     setError("")
   }
 
+  const handleCreateTicket = async () => {
+    if (!currentSessionId) return
+
+    setIsCreatingTicket(true)
+    setError("")
+
+    try {
+      const ticket = await ticketApi.createTicket({
+        session_id: currentSessionId,
+        priority: "medium"
+      })
+
+      // Navigate to the created ticket
+      router.push(`/tickets/${ticket.id}`)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError("Failed to create ticket")
+      }
+    } finally {
+      setIsCreatingTicket(false)
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-73px)]">
       {/* Session List Sidebar */}
@@ -142,6 +170,25 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col bg-gray-50">
         {currentSessionId ? (
           <>
+            {/* Chat Header with Create Ticket Button */}
+            <div className="bg-white border-b border-gray-200 px-4 py-3">
+              <div className="max-w-3xl mx-auto flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {sessions.find(s => s.id === currentSessionId)?.title || "Current Conversation"}
+                </div>
+                <button
+                  onClick={handleCreateTicket}
+                  disabled={isCreatingTicket}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  {isCreatingTicket ? "생성 중..." : "티켓 생성"}
+                </button>
+              </div>
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4">
               {isLoading ? (

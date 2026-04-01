@@ -1,194 +1,96 @@
-# 01. 시스템 아키텍처
+# 01. Architecture
 
----
+## 개요
 
-## 1. 전체 구성도
+현재 시스템은 다음 3개 핵심 레이어로 구성됩니다.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     사내 네트워크                          │
-│                                                          │
-│  [임직원 브라우저]                                          │
-│       │ HTTPS                                            │
-│       ▼                                                  │
-│  ┌─────────────┐                                         │
-│  │  Next.js    │  Frontend (Port 3000)                   │
-│  │  Web App    │  - 채팅 UI                               │
-│  │             │  - 티켓 조회                              │
-│  │             │  - 관리자 화면                             │
-│  └──────┬──────┘                                         │
-│         │ REST API (HTTPS)                               │
-│         ▼                                                │
-│  ┌─────────────┐     ┌──────────────┐                   │
-│  │  FastAPI    │────▶│  ChromaDB    │  Vector DB         │
-│  │  Backend    │     │  (Port 8000) │  - KB 문서 임베딩   │
-│  │  (Port 8080)│     └──────────────┘                   │
-│  │             │     ┌──────────────┐                   │
-│  │             │────▶│  PostgreSQL  │  RDBMS             │
-│  │             │     │  (Port 5432) │  - 티켓, 유저, 이력 │
-│  └──────┬──────┘     └──────────────┘                   │
-│         │ HTTPS (외부)                                    │
-│         ▼                                                │
-│  ┌─────────────┐                                         │
-│  │  Claude API │  LLM (교체 가능)                         │
-│  │  (Anthropic)│                                         │
-│  └─────────────┘                                         │
-└─────────────────────────────────────────────────────────┘
+1. Next.js 프론트엔드
+2. FastAPI 백엔드
+3. PostgreSQL 데이터베이스
+
+선택적으로 ChromaDB를 붙여 KB 검색 품질을 높일 수 있습니다. ChromaDB가 없더라도 시스템은 동작하며, 이 경우 KB 검색은 DB 텍스트 검색으로 폴백합니다.
+
+## 현재 아키텍처
+
+```text
+Browser
+  -> Frontend (Next.js, port 3000)
+  -> Backend (FastAPI, port 8080)
+  -> PostgreSQL (port 5432)
+  -> ChromaDB (optional, port 8000)
 ```
 
----
+개발용 Docker Compose 기준 서비스:
 
-## 2. 요청 처리 흐름
+- `frontend`
+- `backend`
+- `db`
 
-### 2-1. 일반 AI 채팅 응답
+ChromaDB는 현재 Compose 기본 구성에는 포함하지 않았습니다.
 
-```
-임직원 질문 입력
-    │
-    ▼
-[Backend] 질문 수신
-    │
-    ▼
-[RAG] ChromaDB에서 관련 KB 문서 검색 (Top-K)
-    │
-    ▼
-[LLM Layer] 검색된 문서 + 질문 → Claude API 호출
-    │
-    ├─ 해결 가능 → AI 답변 반환 + 대화 이력 저장
-    │
-    └─ 해결 불가 → "티켓 생성하시겠습니까?" 안내
-```
+## 백엔드 구성
 
-### 2-2. 티켓 생성 흐름
+### Core
 
-```
-임직원 티켓 생성 요청
-    │
-    ▼
-[Backend] 대화 내용 요약 (Claude API)
-    │
-    ▼
-[DB] 티켓 생성 (PostgreSQL)
-    │
-    ▼
-[알림] IT 담당자에게 새 티켓 알림 (이메일 or 내부 알림)
-    │
-    ▼
-[IT 담당자] 티켓 확인 → 처리 → 상태 업데이트
-```
+- Pydantic Settings 기반 설정 관리
+- 구조화된 로깅
+- 커스텀 예외 및 에러 핸들러
+- Request ID 미들웨어
+- CORS 설정
 
----
+### Domain
 
-## 3. LLM 추상화 레이어
+- Auth
+- Chat
+- Knowledge Base
+- Tickets
 
-> Provider 교체 시 `LLM_PROVIDER` 환경변수 값만 변경하면 됩니다.
+### Data Layer
 
-```python
-# backend/app/core/llm/base.py
-from abc import ABC, abstractmethod
+- SQLAlchemy async session
+- Alembic migration
+- SQLite(dev/test) 및 PostgreSQL 지원
 
-class LLMBase(ABC):
-    @abstractmethod
-    async def chat(self, messages: list[dict], context: str = "") -> str:
-        """RAG context를 포함한 채팅 응답"""
-        pass
+## 인증 흐름
 
-    @abstractmethod
-    async def summarize(self, text: str) -> str:
-        """티켓 생성을 위한 대화 요약"""
-        pass
+1. 사용자가 `/api/v1/auth/login` 호출
+2. 백엔드가 계정과 비밀번호 검증
+3. Access token / Refresh token 발급
+4. 프론트가 `localStorage`에 토큰 저장
+5. 이후 API 호출 시 `Authorization: Bearer ...` 사용
 
-    @abstractmethod
-    async def embed(self, text: str) -> list[float]:
-        """KB 문서 임베딩 (ChromaDB 저장용)"""
-        pass
-```
+## 채팅 흐름
 
-```python
-# backend/app/core/llm/claude.py
-import anthropic
-from .base import LLMBase
+1. 사용자가 메시지 전송
+2. 세션이 없으면 새 `chat_sessions` 생성
+3. 사용자 메시지를 `chat_messages`에 저장
+4. KB 검색 수행
+5. LLM 응답 생성
+6. AI 응답을 `chat_messages`에 저장
+7. 프론트로 단건 응답 반환
 
-class ClaudeLLM(LLMBase):
-    def __init__(self):
-        self.client = anthropic.AsyncAnthropic()
-        self.model = "claude-sonnet-4-20250514"
+현재는 동기식 단건 응답이며, SSE 스트리밍은 아직 구현되지 않았습니다.
 
-    async def chat(self, messages: list[dict], context: str = "") -> str:
-        system_prompt = f"""
-        당신은 IT Helpdesk AI 어시스턴트입니다.
-        아래 참고 문서를 바탕으로 임직원의 IT 문의에 답변하세요.
-        참고 문서에 없는 내용은 모른다고 답하고 티켓 생성을 안내하세요.
+## KB 흐름
 
-        [참고 문서]
-        {context}
-        """
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1024,
-            system=system_prompt,
-            messages=messages,
-        )
-        return response.content[0].text
-```
+1. 관리자 또는 IT 담당자가 문서 업로드
+2. 문서 파싱(PDF/DOCX/TXT/MD)
+3. 텍스트 청킹
+4. ChromaDB 연결 시 벡터 저장
+5. 메타데이터와 본문을 `kb_documents`에 저장
+6. 검색 시 ChromaDB 우선, 실패 시 DB 텍스트 검색
 
----
+## 티켓 흐름
 
-## 4. RAG 처리 흐름
+1. 사용자가 채팅 세션 기반 티켓 생성
+2. 백엔드가 세션 메시지들을 묶어 LLM으로 요약
+3. 카테고리와 제목/설명을 생성
+4. `tickets`에 저장
+5. 댓글은 `ticket_comments`로 관리
+6. IT 담당자가 상태/우선순위/담당자 변경
 
-```
-[KB 문서 업로드] (관리자)
-    │
-    ▼
-텍스트 추출 (PDF/DOCX/TXT)
-    │
-    ▼
-청크 분할 (Chunk Size: 500 tokens, Overlap: 50)
-    │
-    ▼
-임베딩 생성 (Claude Embeddings API)
-    │
-    ▼
-ChromaDB 저장 (컬렉션: "it_knowledge_base")
+## 현재 구현 제약
 
-────────────────────────────────
-
-[임직원 질문 수신]
-    │
-    ▼
-질문 임베딩 생성
-    │
-    ▼
-ChromaDB 유사도 검색 (Top-3 문서)
-    │
-    ▼
-검색 결과 → LLM 프롬프트 컨텍스트로 주입
-```
-
----
-
-## 5. 배포 구성 (Docker Compose)
-
-```yaml
-# docker-compose.yml 구조
-services:
-  frontend:     # Next.js (Port 3000)
-  backend:      # FastAPI (Port 8080)
-  chromadb:     # ChromaDB (Port 8000)
-  postgres:     # PostgreSQL (Port 5432)
-
-# 모든 서비스는 사내 서버 단일 호스트에서 실행
-# 외부 인터넷 접근: Claude API만 허용 (방화벽 설정 필요)
-```
-
----
-
-## 6. 보안 고려사항
-
-| 항목 | 적용 방안 |
-|---|---|
-| 인증 | JWT 토큰 (추후 SSO 연동) |
-| API 키 보호 | 환경변수, 절대 코드에 하드코딩 금지 |
-| 사내망 격리 | 내부 IP만 접근 허용 (Nginx 설정) |
-| Claude API 통신 | HTTPS, 사내 데이터 최소화 전송 |
-| DB 암호화 | PostgreSQL TLS 연결 |
+- 관리자 전용 통합 대시보드 계층은 아직 없음
+- 티켓 번호 생성은 DB auto increment 형태를 기대하지만, 실제 운영 DB 제약 검증은 추가 필요
+- ChromaDB 없는 환경에서는 검색 정확도가 낮을 수 있음

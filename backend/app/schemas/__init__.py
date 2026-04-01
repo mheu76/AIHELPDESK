@@ -26,6 +26,16 @@ from app.schemas.kb import (
     KBSearchResult,
     KBSearchResponse
 )
+from app.schemas.ticket import (
+    TicketCreateRequest,
+    TicketUpdateRequest,
+    TicketResponse,
+    TicketListResponse,
+    TicketDetailResponse,
+    CommentCreateRequest,
+    CommentResponse,
+    TicketStatsResponse
+)
 
 __all__ = [
     "LoginRequest",
@@ -46,5 +56,13 @@ __all__ = [
     "KBDocumentListResponse",
     "KBSearchRequest",
     "KBSearchResult",
-    "KBSearchResponse"
+    "KBSearchResponse",
+    "TicketCreateRequest",
+    "TicketUpdateRequest",
+    "TicketResponse",
+    "TicketListResponse",
+    "TicketDetailResponse",
+    "CommentCreateRequest",
+    "CommentResponse",
+    "TicketStatsResponse",
 ]

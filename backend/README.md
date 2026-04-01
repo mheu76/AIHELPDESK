@@ -1,182 +1,117 @@
-# IT Helpdesk Backend
+# Backend
 
-FastAPI-based backend service for IT AI Helpdesk system.
+FastAPI 기반 백엔드입니다. 인증, 채팅, KB, 티켓 API를 제공합니다.
 
-## Setup
+## 현재 구현 범위
 
-### 1. Install Dependencies
+- 사용자 등록, 로그인, 토큰 갱신, 내 정보 조회
+- 채팅 세션 생성 및 메시지 저장
+- KB 문서 업로드, 목록, 상세, 검색, 삭제
+- 채팅 세션 기반 티켓 생성
+- 티켓 목록, 상세, 댓글, 상태/우선순위/담당자 변경
+- 티켓 통계 조회
+- Alembic 마이그레이션 및 pytest 기반 테스트
+
+## 실행
+
+### 로컬
 
 ```bash
 cd backend
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy example environment file
-cp .env.example .env
-
-# Edit .env and set your values
-# IMPORTANT: Set ANTHROPIC_API_KEY and JWT_SECRET_KEY
-```
-
-Generate a secure JWT secret key:
-```bash
-openssl rand -hex 32
-```
-
-### 3. Database Setup
-
-The harness includes automatic database initialization in development mode.
-For production, use Alembic migrations.
-
-## Running the Application
-
-### Development Server
-
-```bash
-cd backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-The API will be available at:
-- API: http://localhost:8080
-- Interactive Docs: http://localhost:8080/docs
-- ReDoc: http://localhost:8080/redoc
-- Health Check: http://localhost:8080/health
+### Docker
 
-## Running Tests
+루트에서 실행:
+
+```bash
+docker compose up --build
+```
+
+## 환경 변수
+
+필수:
+
+- `DATABASE_URL`
+- `JWT_SECRET_KEY`
+- `ANTHROPIC_API_KEY` 또는 `OPENAI_API_KEY`
+
+주요 선택:
+
+- `LLM_PROVIDER=claude|openai`
+- `LLM_MODEL`
+- `FRONTEND_URL`
+- `ALLOWED_ORIGINS`
+- `CHROMA_HOST`
+- `CHROMA_PORT`
+
+예시는 [backend/.env.example](/D:/DEV/AIhelpdesk/backend/.env.example), Docker 전용 값은 [backend/.env.docker](/D:/DEV/AIhelpdesk/backend/.env.docker)에 있습니다.
+
+## 데이터베이스
+
+기본 전제:
+
+- 개발/테스트: SQLite 가능
+- Docker 개발환경: PostgreSQL 사용
+- 스키마 변경: Alembic 사용
+
+마이그레이션:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+현재 초기 마이그레이션은 `users`, `chat_sessions`, `chat_messages`, `kb_documents`, `tickets`, `ticket_comments`를 포함합니다.
+
+## API 라우트
+
+### Auth
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `GET /api/v1/auth/me`
+
+### Chat
+
+- `POST /api/v1/chat`
+- `GET /api/v1/chat/sessions`
+- `GET /api/v1/chat/sessions/{session_id}`
+- `PATCH /api/v1/chat/sessions/{session_id}/resolve`
+
+### Knowledge Base
+
+- `POST /api/v1/kb/upload`
+- `GET /api/v1/kb/documents`
+- `GET /api/v1/kb/documents/{doc_id}`
+- `DELETE /api/v1/kb/documents/{doc_id}`
+- `POST /api/v1/kb/search`
+
+### Tickets
+
+- `POST /api/v1/tickets`
+- `GET /api/v1/tickets`
+- `GET /api/v1/tickets/{ticket_id}`
+- `PATCH /api/v1/tickets/{ticket_id}`
+- `POST /api/v1/tickets/{ticket_id}/comments`
+- `GET /api/v1/tickets/stats/overview`
+
+## 테스트
 
 ```bash
 cd backend
 pytest
-```
-
-Run with coverage:
-```bash
-pytest --cov=app --cov-report=html
-```
-
-Run specific test types:
-```bash
-# Integration tests only
 pytest -m integration
-
-# Unit tests only
-pytest -m unit
+pytest tests/unit/test_api_ticket.py
 ```
 
-## Project Structure
+## 구현상 메모
 
-```
-backend/
-├── app/
-│   ├── core/              # Core infrastructure (harness)
-│   │   ├── config.py      # Settings management
-│   │   ├── logging.py     # Logging setup
-│   │   ├── context.py     # Request context
-│   │   ├── exceptions.py  # Custom exceptions
-│   │   └── error_handlers.py
-│   ├── middleware/        # Request/response middleware
-│   │   ├── request_id.py
-│   │   └── error_middleware.py
-│   ├── db/                # Database session management
-│   │   ├── base.py
-│   │   └── session.py
-│   ├── api/v1/            # API endpoints
-│   │   └── deps.py        # FastAPI dependencies
-│   ├── models/            # SQLAlchemy models (to be added)
-│   ├── schemas/           # Pydantic schemas (to be added)
-│   ├── services/          # Business logic (to be added)
-│   └── main.py            # Application entry point
-├── tests/
-│   ├── conftest.py        # Test fixtures
-│   └── integration/       # Integration tests
-├── requirements.txt
-├── pytest.ini
-└── .env.example
-```
-
-## Harness Features
-
-The backend harness provides:
-
-✅ **Configuration Management** - Type-safe settings with Pydantic
-✅ **Logging System** - Human-readable logs with request context
-✅ **Request ID Tracking** - Unique ID for each request in logs and headers
-✅ **Error Handling** - Consistent error responses with error codes
-✅ **Database Session Management** - Async SQLAlchemy with connection pooling
-✅ **Middleware Stack** - Request ID injection, error context collection, CORS
-✅ **Test Infrastructure** - Pytest fixtures with SQLite in-memory database
-
-## Verification
-
-### 1. Configuration Test
-
-```python
-python -c "from app.core.config import settings; print(settings.model_dump())"
-```
-
-### 2. Logging Test
-
-```python
-from app.core.logging import setup_logging, get_logger
-from app.core.context import set_request_id, set_user_id
-
-setup_logging()
-logger = get_logger(__name__)
-
-set_request_id("test-1234")
-set_user_id("user-5678")
-
-logger.info("Test log message")
-```
-
-### 3. Health Check Test
-
-```bash
-# Start server
-uvicorn app.main:app --reload
-
-# Test health endpoint
-curl http://localhost:8080/health
-
-# Test with request ID
-curl -H "X-Request-ID: test-123" http://localhost:8080/health
-```
-
-## Next Steps
-
-After the harness is complete, the next implementation steps are:
-
-1. **Models** - Create SQLAlchemy models (User, ChatSession, Ticket, etc.)
-2. **Security** - Implement JWT authentication and password hashing
-3. **LLM Layer** - Create LLM abstraction layer (Claude, OpenAI)
-4. **Services** - Implement business logic (Auth, Chat, Tickets)
-5. **API Endpoints** - Create REST API routes
-6. **Alembic Migrations** - Setup database migrations
-
-## Troubleshooting
-
-### Import Errors
-
-If you see import errors, make sure you're running from the backend directory:
-```bash
-cd backend
-python -m app.main
-```
-
-### Database Connection Issues
-
-Check your DATABASE_URL in .env file. For development, you can use SQLite:
-```
-DATABASE_URL=sqlite+aiosqlite:///./helpdesk.db
-```
-
-### Missing Dependencies
-
-Install all dependencies including optional ones:
-```bash
-pip install -r requirements.txt
-```
+- `test-key` 계열 API 키를 쓰면 오프라인용 `StubLLM`이 사용됩니다.
+- ChromaDB 미연결 시 KB 검색은 DB 텍스트 검색으로 폴백합니다.
+- Postgres 개발환경에서는 `create_all()` 대신 Alembic 경로를 사용합니다.
