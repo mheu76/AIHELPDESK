@@ -3,8 +3,7 @@ Knowledge Base document model.
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, ARRAY, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, JSON, Text, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -23,7 +22,7 @@ class KBDocument(Base):
     file_type = Column(String(20), nullable=False)  # pdf, docx, txt, md
     file_size = Column(Integer, nullable=True)  # bytes
     chunk_count = Column(Integer, default=0, nullable=False)  # Number of chunks in ChromaDB
-    chroma_ids = Column(ARRAY(Text), nullable=True)  # ChromaDB document IDs
+    chroma_ids = Column(JSON, nullable=True)  # ChromaDB document IDs
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)

@@ -3,8 +3,7 @@ User model for authentication and authorization.
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Enum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Boolean, DateTime, Enum, Uuid as UUID
 from sqlalchemy.orm import relationship
 import enum
 

@@ -38,6 +38,11 @@ class AuthenticationError(HelpDeskException):
     def __init__(self, message: str = "Authentication failed"):
         super().__init__("INVALID_CREDENTIALS", message, 401)
 
+class UnauthorizedError(HelpDeskException):
+    """User is not authorized for this action"""
+    def __init__(self, message: str = "Not authorized", error_code: str = "UNAUTHORIZED"):
+        super().__init__(error_code, message, 401)
+
 
 class InvalidTokenError(HelpDeskException):
     """JWT token is invalid or expired"""
@@ -54,15 +59,24 @@ class ForbiddenError(HelpDeskException):
 # Resource Errors
 class NotFoundError(HelpDeskException):
     """Requested resource not found"""
-    def __init__(self, resource: str, resource_id: str):
-        message = f"{resource} not found: {resource_id}"
-        super().__init__("NOT_FOUND", message, 404, {"resource": resource, "id": resource_id})
+    def __init__(self, message: str = "Resource not found", error_code: str = "NOT_FOUND"):
+        super().__init__(error_code, message, 404)
+
+class ConflictError(HelpDeskException):
+    """Resource conflict (e.g. already exists)"""
+    def __init__(self, message: str, error_code: str = "CONFLICT"):
+        super().__init__(error_code, message, 409)
 
 
 class ValidationError(HelpDeskException):
     """Request validation failed"""
     def __init__(self, message: str, errors: dict[str, Any]):
         super().__init__("VALIDATION_ERROR", message, 400, {"errors": errors})
+
+class BadRequestError(HelpDeskException):
+    """Bad Request"""
+    def __init__(self, message: str, error_code: str = "BAD_REQUEST"):
+        super().__init__(error_code, message, 400)
 
 
 # External Service Errors

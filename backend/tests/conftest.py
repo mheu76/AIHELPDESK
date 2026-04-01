@@ -145,3 +145,138 @@ def admin_headers(admin_user: User) -> dict:
     """Create auth headers for admin user"""
     token = create_access_token({"sub": admin_user.employee_id})
     return {"Authorization": f"Bearer {token}"}
+
+
+# ============================================================
+# MOCK LLM PROVIDER
+# ============================================================
+
+from app.core.llm.base import LLMBase
+from typing import Dict, Any, List, Optional, AsyncIterator
+
+
+class MockLLM(LLMBase):
+    """Mock LLM provider for testing"""
+    
+    def __init__(self, api_key: str = "mock-key", model: Optional[str] = None):
+        super().__init__(api_key, model)
+        self.call_count = 0
+        self.last_messages = None
+    
+    async def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Return a mock response"""
+        self.call_count += 1
+        self.last_messages = messages
+        
+        return {
+            "content": "This is a mock response from the AI assistant. How can I help you reset your password?",
+            "role": "assistant",
+            "usage": {
+                "input_tokens": 50,
+                "output_tokens": 20
+            }
+        }
+    
+    async def chat_completion_stream(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> AsyncIterator[str]:
+        """Return a mock streaming response"""
+        self.call_count += 1
+        chunks = [
+            "This ", "is ", "a ", "mock ", "streaming ",
+            "response ", "from ", "the ", "AI ", "assistant."
+        ]
+        for chunk in chunks:
+            yield chunk
+    
+    async def embed_text(self, text: str, **kwargs) -> List[float]:
+        """Return a mock embedding vector"""
+        # Return a consistent embedding for testing
+        return [0.1] * 384
+    
+    def count_tokens(self, text: str) -> int:
+        """Count tokens in text (simplified)"""
+        return len(text.split())
+
+
+@pytest.fixture
+def mock_llm() -> MockLLM:
+    """Provide a mock LLM for testing"""
+    return MockLLM()
+
+
+# ============================================================
+# CHAT SESSION FIXTURES
+# ============================================================
+
+from app.models.chat import ChatSession, ChatMessage, MessageRole
+
+
+@pytest.fixture
+async def test_chat_session(test_db: AsyncSession, test_user: User) -> ChatSession:
+    """Create a test chat session"""
+    session = ChatSession(
+        user_id=test_user.id,
+        title="Test Password Reset"
+    )
+    test_db.add(session)
+    await test_db.commit()
+    await test_db.refresh(session)
+    return session
+
+
+@pytest.fixture
+async def test_chat_message(test_db: AsyncSession, test_chat_session: ChatSession) -> ChatMessage:
+    """Create a test chat message"""
+    message = ChatMessage(
+        session_id=test_chat_session.id,
+        role=MessageRole.USER,
+        content="How do I reset my password?"
+    )
+    test_db.add(message)
+    await test_db.commit()
+    await test_db.refresh(message)
+    return message
+
+
+# ============================================================
+# KB DOCUMENT FIXTURES
+# ============================================================
+
+from app.models.kb_document import KBDocument
+
+
+@pytest.fixture
+async def test_kb_document(test_db: AsyncSession, admin_user: User) -> KBDocument:
+    """Create a test KB document"""
+    doc = KBDocument(
+        title="Password Reset Guide",
+        file_name="password_reset.txt",
+        file_type="txt",
+        content="""
+        How to Reset Your Password
+        
+        If you have forgotten your password, follow these steps:
+        1. Go to the login page
+        2. Click on "Forgot Password"
+        3. Enter your email address
+        4. Click the reset link in your email
+        5. Enter your new password
+        6. Login with your new password
+        """,
+        created_by_id=admin_user.id
+    )
+    test_db.add(doc)
+    await test_db.commit()
+    await test_db.refresh(doc)
+    return doc

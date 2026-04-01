@@ -4,8 +4,12 @@ RAG (Retrieval-Augmented Generation) service for knowledge base management.
 from typing import List, Dict, Any, Optional, BinaryIO
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-import chromadb
-from chromadb.config import Settings
+try:
+    import chromadb
+    from chromadb.config import Settings
+except Exception:
+    chromadb = None
+    Settings = None
 import uuid
 import re
 
@@ -23,11 +27,14 @@ class RAGService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.chroma_client = chromadb.HttpClient(
-            host=settings.CHROMA_HOST,
-            port=settings.CHROMA_PORT,
-            settings=Settings(anonymized_telemetry=False)
-        )
+        if chromadb:
+            self.chroma_client = chromadb.HttpClient(
+                host=settings.CHROMA_HOST,
+                port=settings.CHROMA_PORT,
+                settings=Settings(anonymized_telemetry=False)
+            )
+        else:
+            self.chroma_client = None
         self.collection_name = settings.CHROMA_COLLECTION
 
     def _get_collection(self):
