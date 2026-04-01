@@ -10,16 +10,33 @@ from app.models.chat import ChatSession, ChatMessage, MessageRole
 
 
 @pytest.fixture
-def mock_llm_for_ticket_api():
-    """Mock LLM for ticket API tests"""
-    with patch('app.api.v1.deps.get_llm') as mock:
-        llm = MagicMock()
-        llm.generate = AsyncMock(side_effect=[
-            "account",  # Categorization
-            "TITLE: Test Ticket\nDESCRIPTION: Test description"  # Summarization
-        ])
-        mock.return_value = llm
-        yield mock
+def mock_llm_for_ticket_api(test_client):
+    """Mock LLM for ticket API tests - override the dependency"""
+    from app.main import app
+    from app.api.v1.deps import get_llm
+
+    # Create a mock LLM with proper responses for ticket creation
+    call_count = [0]  # Use list to allow modification in nested function
+
+    class TicketMockLLM:
+        async def generate(self, messages, **kwargs):
+            """Return appropriate response based on call count"""
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # First call: categorization
+                return "account"
+            else:
+                # Subsequent calls: summarization
+                return "TITLE: Test Ticket\nDESCRIPTION: Test description"
+
+    mock_llm = TicketMockLLM()
+
+    # Override the dependency
+    app.dependency_overrides[get_llm] = lambda: mock_llm
+
+    yield mock_llm
+
+    # Note: cleanup is handled by test_client fixture
 
 
 @pytest.fixture
@@ -136,12 +153,7 @@ class TestTicketAPI:
         )
         assert response1.status_code == 201
 
-        # Try to create second ticket
-        mock_llm_for_ticket_api.return_value.generate = AsyncMock(side_effect=[
-            "account",
-            "TITLE: Test\nDESCRIPTION: Test"
-        ])
-
+        # Try to create second ticket (should fail with duplicate error)
         response2 = await test_client.post(
             "/api/v1/tickets",
             headers=auth_headers,

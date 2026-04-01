@@ -16,7 +16,7 @@ from app.schemas.ticket import (
     CommentCreateRequest
 )
 from app.core.llm.base import LLMBase
-from app.core.exceptions import NotFoundError, BadRequestError, PermissionDeniedError
+from app.core.exceptions import NotFoundError, BadRequestError, ForbiddenError
 
 
 @pytest.fixture
@@ -215,7 +215,7 @@ class TestTicketService:
         await test_db.commit()
         await test_db.refresh(other_user)
 
-        with pytest.raises(PermissionDeniedError):
+        with pytest.raises(ForbiddenError):
             await ticket_service.get_ticket(created.id, other_user)
 
     @pytest.mark.asyncio
@@ -379,7 +379,7 @@ class TestTicketService:
         # Try to update as employee
         update_request = TicketUpdateRequest(status=TicketStatus.RESOLVED)
 
-        with pytest.raises(PermissionDeniedError, match="Only IT staff"):
+        with pytest.raises(ForbiddenError, match="Only IT staff"):
             await ticket_service.update_ticket(created.id, test_user, update_request)
 
     @pytest.mark.asyncio
@@ -464,7 +464,7 @@ class TestTicketService:
             is_internal=True
         )
 
-        with pytest.raises(PermissionDeniedError, match="Only IT staff"):
+        with pytest.raises(ForbiddenError, match="Only IT staff"):
             await ticket_service.add_comment(created.id, test_user, comment_request)
 
     @pytest.mark.asyncio
@@ -506,5 +506,5 @@ class TestTicketService:
         """Test getting ticket stats as employee (should fail)"""
         ticket_service = TicketService(test_db, mock_llm)
 
-        with pytest.raises(PermissionDeniedError, match="Only IT staff"):
+        with pytest.raises(ForbiddenError, match="Only IT staff"):
             await ticket_service.get_ticket_stats(test_user)

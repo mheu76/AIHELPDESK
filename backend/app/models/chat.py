@@ -44,7 +44,7 @@ class ChatSession(Base):
         order_by="ChatMessage.created_at",
         cascade="all, delete-orphan"
     )
-    # ticket = relationship("Ticket", back_populates="session")
+    ticket = relationship("Ticket", back_populates="session", uselist=False)
 
     def __repr__(self) -> str:
         return f"<ChatSession(id={self.id}, user_id={self.user_id}, is_resolved={self.is_resolved})>"

@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, and_, or_
 from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.exc import IntegrityError
 import uuid
 from datetime import datetime
 
@@ -22,7 +23,7 @@ from app.schemas.ticket import (
     TicketStatsResponse
 )
 from app.core.llm import LLMBase
-from app.core.exceptions import NotFoundError, BadRequestError, PermissionDeniedError
+from app.core.exceptions import NotFoundError, BadRequestError, ForbiddenError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -97,8 +98,12 @@ DESCRIPTION: [detailed description here]"""
         category = await self._categorize_issue(conversation)
         title, description = await self._summarize_conversation(conversation, request.additional_notes)
 
+        # Generate next ticket number
+        ticket_number = await self._generate_next_ticket_number()
+
         # Create ticket
         ticket = Ticket(
+            ticket_number=ticket_number,
             title=title,
             description=description,
             category=category,
@@ -109,8 +114,12 @@ DESCRIPTION: [detailed description here]"""
         )
 
         self.db.add(ticket)
-        await self.db.commit()
-        await self.db.refresh(ticket)
+        try:
+            await self.db.commit()
+            await self.db.refresh(ticket)
+        except IntegrityError:
+            await self.db.rollback()
+            raise BadRequestError("Ticket already exists for this chat session")
 
         logger.info(f"Created ticket {ticket.ticket_number} from session {session.id}")
 
@@ -138,14 +147,14 @@ DESCRIPTION: [detailed description here]"""
 
         Raises:
             NotFoundError: If ticket not found
-            PermissionDeniedError: If user cannot access ticket
+            ForbiddenError: If user cannot access ticket
         """
         ticket = await self._get_ticket_by_id(ticket_id)
 
         # Check permissions
         can_view_all = user.role in [UserRole.IT_STAFF, UserRole.ADMIN]
         if not can_view_all and ticket.requester_id != user.id:
-            raise PermissionDeniedError("Cannot access this ticket")
+            raise ForbiddenError("Cannot access this ticket")
 
         # Load relationships
         await self.db.refresh(ticket, ["requester", "assignee", "comments"])
@@ -238,10 +247,10 @@ DESCRIPTION: [detailed description here]"""
             Updated ticket details
 
         Raises:
-            PermissionDeniedError: If user is not IT staff/admin
+            ForbiddenError: If user is not IT staff/admin
         """
         if user.role not in [UserRole.IT_STAFF, UserRole.ADMIN]:
-            raise PermissionDeniedError("Only IT staff can update tickets")
+            raise ForbiddenError("Only IT staff can update tickets")
 
         ticket = await self._get_ticket_by_id(ticket_id)
 
@@ -289,7 +298,7 @@ DESCRIPTION: [detailed description here]"""
             Created comment
 
         Raises:
-            PermissionDeniedError: If employee tries to create internal comment
+            ForbiddenError: If employee tries to create internal comment
         """
         ticket = await self._get_ticket_by_id(ticket_id)
 
@@ -299,11 +308,11 @@ DESCRIPTION: [detailed description here]"""
             user.role in [UserRole.IT_STAFF, UserRole.ADMIN]
         )
         if not can_access:
-            raise PermissionDeniedError("Cannot access this ticket")
+            raise ForbiddenError("Cannot access this ticket")
 
         # Only IT staff can create internal comments
         if request.is_internal and user.role not in [UserRole.IT_STAFF, UserRole.ADMIN]:
-            raise PermissionDeniedError("Only IT staff can create internal comments")
+            raise ForbiddenError("Only IT staff can create internal comments")
 
         comment = TicketComment(
             ticket_id=ticket_id,
@@ -339,10 +348,10 @@ DESCRIPTION: [detailed description here]"""
             Ticket statistics
 
         Raises:
-            PermissionDeniedError: If user is not IT staff/admin
+            ForbiddenError: If user is not IT staff/admin
         """
         if user.role not in [UserRole.IT_STAFF, UserRole.ADMIN]:
-            raise PermissionDeniedError("Only IT staff can view statistics")
+            raise ForbiddenError("Only IT staff can view statistics")
 
         # Total tickets
         total_query = select(func.count(Ticket.id))
@@ -369,7 +378,8 @@ DESCRIPTION: [detailed description here]"""
         ).group_by(Ticket.category)
         category_result = await self.db.execute(category_query)
         tickets_by_category = {
-            str(cat): count for cat, count in category_result.all()
+            cat.value if hasattr(cat, 'value') else str(cat): count
+            for cat, count in category_result.all()
         }
 
         # By priority
@@ -379,7 +389,8 @@ DESCRIPTION: [detailed description here]"""
         ).group_by(Ticket.priority)
         priority_result = await self.db.execute(priority_query)
         tickets_by_priority = {
-            str(pri): count for pri, count in priority_result.all()
+            pri.value if hasattr(pri, 'value') else str(pri): count
+            for pri, count in priority_result.all()
         }
 
         return TicketStatsResponse(
@@ -574,3 +585,18 @@ DESCRIPTION: [detailed description here]"""
             updated_at=ticket.updated_at,
             comments=comments
         )
+
+    async def _generate_next_ticket_number(self) -> int:
+        """
+        Generate next sequential ticket number.
+
+        Returns:
+            Next available ticket number
+        """
+        # Get max ticket number
+        query = select(func.max(Ticket.ticket_number))
+        result = await self.db.execute(query)
+        max_number = result.scalar_one_or_none()
+
+        # Return 1 for first ticket, or max + 1
+        return 1 if max_number is None else max_number + 1

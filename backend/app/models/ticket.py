@@ -69,7 +69,7 @@ class Ticket(Base):
     )
     requester_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     assignee_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True, unique=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(
@@ -82,7 +82,7 @@ class Ticket(Base):
     # Relationships
     requester = relationship("User", foreign_keys=[requester_id], backref="tickets_created")
     assignee = relationship("User", foreign_keys=[assignee_id], backref="tickets_assigned")
-    session = relationship("ChatSession", backref="ticket", uselist=False)
+    session = relationship("ChatSession", back_populates="ticket", uselist=False)
     comments = relationship(
         "TicketComment",
         back_populates="ticket",

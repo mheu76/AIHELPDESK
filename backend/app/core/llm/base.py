@@ -102,3 +102,31 @@ class LLMBase(ABC):
             Number of tokens
         """
         pass
+
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> str:
+        """
+        Simplified wrapper around chat_completion that returns just the content.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens to generate
+            **kwargs: Provider-specific additional parameters
+
+        Returns:
+            Generated text content
+        """
+        response = await self.chat_completion(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=False,
+            **kwargs
+        )
+        return response.get("content", "")
