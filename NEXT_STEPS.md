@@ -7,6 +7,8 @@ This file tracks follow-up work after the backend recovery, persistent settings 
 ## Priority 1
 
 - Replace temporary SHA-256 password hashing with `bcrypt` or `argon2`
+- Fix deprecation warnings: replace `datetime.utcnow()` with `datetime.now(datetime.UTC)`
+- Fix HTTP_422 constant deprecation in Starlette exception handler
 - Verify Alembic upgrades on a real PostgreSQL database with existing data
 - Add validation, audit logging, and rollback guidance for admin setting changes
 

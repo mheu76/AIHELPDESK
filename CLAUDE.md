@@ -25,12 +25,16 @@ Primary domains:
 
 - Runtime system settings are persisted in the database
 - Chat and LLM dependency wiring use runtime settings
+- Ticket numbering uses PostgreSQL SEQUENCE for safe concurrent creation
+- Ticket-to-session relationship enforced with unique constraint
+- Admin account protection prevents removing last active admin
 - Backend tests pass: `141 passed`
 - Frontend type-check passes
 
 ## Important Risks
 
 - `backend/app/core/security.py` still uses temporary SHA-256 password hashing
+- Several deprecation warnings need addressing (datetime.utcnow, HTTP_422 constant)
 - Chat is not streaming yet
 - CI/CD and production observability are not complete
 

@@ -11,6 +11,8 @@ As of `2026-04-02`, the repository is in a working state with:
 - JWT-based auth with employee, IT staff, and admin roles
 - Chat, knowledge base, ticket, and admin endpoints implemented
 - Persistent `system_settings` storage in the database
+- Atomic ticket numbering via PostgreSQL SEQUENCE
+- Data integrity: unique session-to-ticket constraint, admin account protection
 - Backend test suite passing: `141 passed`
 - Frontend type-check passing
 
@@ -126,5 +128,6 @@ npm run lint
 - [docs/05_ui_spec.md](/D:/DEV/AIhelpdesk/docs/05_ui_spec.md)
 - [docs/06_operating_principles.md](/D:/DEV/AIhelpdesk/docs/06_operating_principles.md)
 - [docs/07.HYBRID RAG SETTING.MD](/D:/DEV/AIhelpdesk/docs/07.HYBRID%20RAG%20SETTING.MD)
+- [docs/08_harrier_embedding_design.md](/D:/DEV/AIhelpdesk/docs/08_harrier_embedding_design.md)
 - [docs/09_admin_manual.md](/D:/DEV/AIhelpdesk/docs/09_admin_manual.md)
 - [NEXT_STEPS.md](/D:/DEV/AIhelpdesk/NEXT_STEPS.md)

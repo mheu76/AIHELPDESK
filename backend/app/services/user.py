@@ -17,7 +17,7 @@ from app.schemas.admin import (
     UserDetailResponse,
     UserUpdateRequest
 )
-from app.core.exceptions import NotFoundError, ForbiddenError
+from app.core.exceptions import NotFoundError, ForbiddenError, BadRequestError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -199,6 +199,36 @@ class UserService:
 
         # Update fields
         update_dict = update_data.model_dump(exclude_unset=True)
+
+        # Admin account protection: prevent removing the last active admin
+        if 'role' in update_dict or 'is_active' in update_dict:
+            new_role = update_dict.get('role', user.role)
+            new_active = update_dict.get('is_active', user.is_active)
+
+            # Check if this change would remove an admin
+            is_removing_admin = (
+                user.role == UserRole.ADMIN and
+                (new_role != UserRole.ADMIN or not new_active)
+            )
+
+            if is_removing_admin:
+                # Count remaining active admins (excluding this user)
+                admin_count_query = select(func.count(User.id)).where(
+                    and_(
+                        User.role == UserRole.ADMIN,
+                        User.is_active == True,
+                        User.id != user_id
+                    )
+                )
+                result = await self.db.execute(admin_count_query)
+                remaining_admins = result.scalar_one()
+
+                if remaining_admins == 0:
+                    raise BadRequestError(
+                        "Cannot remove the last active admin account. "
+                        "Promote or activate another admin first."
+                    )
+
         for field, value in update_dict.items():
             setattr(user, field, value)
 

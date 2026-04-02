@@ -3,7 +3,7 @@ Ticket service for IT helpdesk ticketing system.
 """
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, and_, or_
+from sqlalchemy import select, func, desc, and_, or_, text
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.exc import IntegrityError
 import uuid
@@ -588,15 +588,24 @@ DESCRIPTION: [detailed description here]"""
 
     async def _generate_next_ticket_number(self) -> int:
         """
-        Generate next sequential ticket number.
+        Generate next sequential ticket number safely for concurrent operations.
+
+        Uses PostgreSQL SEQUENCE for production, falls back to locked query for SQLite.
 
         Returns:
             Next available ticket number
         """
-        # Get max ticket number
-        query = select(func.max(Ticket.ticket_number))
-        result = await self.db.execute(query)
-        max_number = result.scalar_one_or_none()
+        # Check database dialect
+        dialect = self.db.bind.dialect.name if self.db.bind else 'postgresql'
 
-        # Return 1 for first ticket, or max + 1
-        return 1 if max_number is None else max_number + 1
+        if dialect == 'postgresql':
+            # Use PostgreSQL sequence for atomic ticket number generation
+            result = await self.db.execute(text("SELECT nextval('ticket_number_seq')"))
+            return result.scalar_one()
+        else:
+            # For SQLite (dev/test), use SELECT MAX with transaction isolation
+            # Note: This is less performant but safe within a transaction
+            query = select(func.max(Ticket.ticket_number)).with_for_update()
+            result = await self.db.execute(query)
+            max_number = result.scalar_one_or_none()
+            return 1 if max_number is None else max_number + 1
