@@ -3,6 +3,9 @@ Tests for chat streaming functionality.
 """
 import pytest
 import json
+import httpx
+from httpx import AsyncClient
+from fastapi import status
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -88,3 +91,39 @@ async def test_send_streaming_message_handles_stream_error(test_db, test_user):
     assert chunks[1] == {"type": "token", "content": " response"}
     assert chunks[2]["type"] == "error"
     assert "API timeout" in chunks[2]["message"]
+
+
+@pytest.mark.asyncio
+async def test_chat_stream_endpoint_returns_ndjson(client: AsyncClient, auth_headers: dict):
+    """Test that /chat/stream endpoint returns NDJSON stream."""
+    # Send streaming request
+    async with client.stream(
+        "POST",
+        "/api/v1/chat/stream",
+        json={"message": "Hello"},
+        headers=auth_headers
+    ) as response:
+        assert response.status_code == status.HTTP_200_OK
+        assert response.headers["content-type"] == "text/plain; charset=utf-8"
+
+        # Read chunks
+        chunks = []
+        async for line in response.aiter_lines():
+            if line.strip():
+                chunks.append(json.loads(line))
+
+        # Verify structure
+        assert len(chunks) > 0
+        assert chunks[-1]["type"] == "done"
+        assert all(c["type"] in ["token", "done", "error"] for c in chunks)
+
+
+@pytest.mark.asyncio
+async def test_chat_stream_endpoint_requires_auth(client: AsyncClient):
+    """Test that streaming endpoint requires authentication."""
+    async with client.stream(
+        "POST",
+        "/api/v1/chat/stream",
+        json={"message": "Hello"}
+    ) as response:
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

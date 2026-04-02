@@ -2,8 +2,10 @@
 Chat endpoints for AI conversation.
 """
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
+import json
 
 from app.api.v1.deps import get_db, get_llm
 from app.api.v1.auth import get_current_user
@@ -44,6 +46,53 @@ async def send_message(
     """
     chat_service = ChatService(db, llm)
     return await chat_service.send_message(current_user, request)
+
+
+@router.post(
+    "/stream",
+    response_class=StreamingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Stream a chat message"
+)
+async def send_streaming_message(
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    llm: LLMBase = Depends(get_llm)
+):
+    """
+    Send a message to the AI assistant with streaming response.
+
+    Returns NDJSON (newline-delimited JSON) chunks:
+    - `{"type": "token", "content": "text"}` - Content chunk
+    - `{"type": "done", "session_id": "...", "message_id": "..."}` - Completion
+    - `{"type": "error", "message": "...", "code": "..."}` - Error
+
+    - **message**: User's message (1-5000 characters)
+    - **session_id**: Optional - existing session ID to continue conversation
+
+    If session_id is not provided, a new session will be created.
+    """
+    chat_service = ChatService(db, llm)
+
+    async def generate():
+        try:
+            async for chunk in chat_service.send_streaming_message(
+                current_user, request
+            ):
+                yield chunk + "\n"
+        except Exception as e:
+            error_chunk = json.dumps({
+                "type": "error",
+                "message": str(e),
+                "code": "ENDPOINT_ERROR"
+            })
+            yield error_chunk + "\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/plain; charset=utf-8"
+    )
 
 
 @router.get(
