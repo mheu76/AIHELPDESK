@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { chatApi, ticketApi, ApiError, type ChatSession, type ChatMessage } from "@/lib/api"
+import { useStreamingChat } from "@/hooks/useStreamingChat"
 
 export default function ChatPage() {
   const router = useRouter()
@@ -15,6 +16,9 @@ export default function ChatPage() {
   const [error, setError] = useState("")
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Streaming chat hook
+  const { isStreaming, streamingMessage, sendStreamingMessage, resetStreamingMessage } = useStreamingChat()
 
   // Load sessions on mount
   useEffect(() => {
@@ -61,34 +65,78 @@ export default function ChatPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim() || isSending) return
+    if (!inputMessage.trim() || isSending || isStreaming) return
 
     const messageText = inputMessage
     setInputMessage("")
     setIsSending(true)
     setError("")
+    resetStreamingMessage()
+
+    // Add user message immediately
+    const userMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      role: "user",
+      content: messageText,
+      created_at: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, userMessage])
 
     try {
-      const response = await chatApi.sendMessage(messageText, currentSessionId || undefined)
+      // Try streaming first
+      const result = await sendStreamingMessage(messageText, currentSessionId || undefined, {
+        onComplete: async (fullMessage) => {
+          // Create assistant message
+          const assistantMessage: ChatMessage = {
+            id: `temp-${Date.now()}-assistant`,
+            role: "assistant",
+            content: fullMessage,
+            created_at: new Date().toISOString(),
+          }
 
-      // Update messages
-      if (response.session_id === currentSessionId) {
-        setMessages((prev) => [...prev, response.message])
-      } else {
-        // New session created
-        setCurrentSessionId(response.session_id)
-        setMessages([response.message])
-        await loadSessions() // Refresh session list
+          setMessages((prev) => [...prev, assistantMessage])
+        },
+        onError: (err, partialMessage) => {
+          if (partialMessage) {
+            // Preserve partial response
+            const partialAssistantMessage: ChatMessage = {
+              id: `temp-${Date.now()}-partial`,
+              role: "assistant",
+              content: partialMessage,
+              created_at: new Date().toISOString(),
+            }
+            setMessages((prev) => [...prev, partialAssistantMessage])
+          }
+
+          if (err instanceof ApiError) {
+            setError(`Streaming error: ${err.message}`)
+          } else {
+            setError(`Streaming error: ${err.message}`)
+          }
+        },
+      })
+
+      // Update session ID if it was a new session
+      if (result.session_id && !currentSessionId) {
+        setCurrentSessionId(result.session_id)
       }
+
+      // Refresh sessions list
+      await loadSessions()
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else {
-        setError("Failed to send message")
+      // Streaming failed, don't fallback to non-streaming to avoid duplicate messages
+      console.error("Streaming error:", err)
+      if (!error) {
+        // Only set error if onError callback didn't already set it
+        if (err instanceof ApiError) {
+          setError(err.message)
+        } else {
+          setError("Failed to send message")
+        }
       }
-      setInputMessage(messageText) // Restore message on error
     } finally {
       setIsSending(false)
+      resetStreamingMessage()
     }
   }
 
@@ -228,6 +276,20 @@ export default function ChatPage() {
                       </div>
                     </div>
                   ))}
+
+                  {/* Streaming message indicator */}
+                  {isStreaming && streamingMessage && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] rounded-lg px-4 py-2 bg-white text-gray-900 border border-gray-200">
+                        <div className="whitespace-pre-wrap">{streamingMessage}</div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                          Streaming...
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div ref={messagesEndRef} />
                 </div>
               )}
@@ -250,14 +312,14 @@ export default function ChatPage() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Type your IT question..."
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    disabled={isSending}
+                    disabled={isSending || isStreaming}
                   />
                   <button
                     type="submit"
-                    disabled={isSending || !inputMessage.trim()}
+                    disabled={isSending || isStreaming || !inputMessage.trim()}
                     className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSending ? "Sending..." : "Send"}
+                    {isStreaming ? "Streaming..." : isSending ? "Sending..." : "Send"}
                   </button>
                 </div>
               </form>
