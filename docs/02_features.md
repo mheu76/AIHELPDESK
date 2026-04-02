@@ -1,101 +1,57 @@
 # 02. Features
 
-## 진행 현황 요약
+## Completed
 
-### 완료
+- User registration, login, token refresh, current-user lookup
+- Chat session creation and continuation
+- Chat session listing and detail retrieval
+- Chat session resolve/unresolve
+- Knowledge base upload, list, detail, delete, search
+- Ticket creation from chat sessions
+- Ticket list, detail, update, comments, and statistics
+- Admin dashboard
+- Admin user management
+- Admin system settings backed by the database
+- Docker local development stack
+- Backend automated tests
+- Frontend type-check
 
-- 사용자 등록/로그인/토큰 갱신
-- 현재 사용자 조회
-- 채팅 세션 생성 및 대화 저장
-- 채팅 세션 목록/상세 조회
-- 세션 해결 여부 표시
-- KB 문서 업로드/목록/상세/검색/삭제
-- 채팅 세션 기반 티켓 생성
-- 티켓 목록/상세 조회
-- 티켓 댓글 작성
-- IT 담당자/관리자 티켓 업데이트
-- 티켓 통계 조회
-- 프론트 로그인/회원가입/채팅/티켓/KB 화면
-- 개발용 Docker 환경
+## Partially Implemented
 
-### 부분 구현
+- RAG quality depends on ChromaDB availability
+- Ticket title/category generation depends on LLM success and falls back safely
+- Frontend admin pages exist but still need UX hardening
+- Chat page works but still needs cleanup and streaming UX
 
-- LLM 기반 KB 답변: 동작함
-  단, 품질은 ChromaDB 연결 여부에 따라 차이 있음
-- 티켓 자동 분류/요약: 동작함
-  LLM 실패 시 기본값으로 폴백
-- 역할 기반 접근 제어: 대부분 구현
-  관리자 전용 UI는 아직 충분히 없음
+## Not Implemented
 
-### 미구현
+- SSE streaming chat
+- Frontend automated tests
+- Error tracking integration
+- CI/CD
+- Production deployment playbooks
 
-- SSE 스트리밍 채팅
-- 관리자 대시보드 UI/API
-- 사용자 관리 UI
-- 시스템 설정 UI
-- 알림 시스템
-- 운영 배포 자동화
-
-## 기능 상세
-
-### 인증
-
-- 회원가입
-- 로그인
-- 리프레시 토큰
-- 내 정보 조회
-- 역할: `employee`, `it_staff`, `admin`
-
-### 채팅
-
-- 새 세션 자동 생성
-- 기존 세션 이어쓰기
-- 대화 이력 저장
-- 세션 목록 조회
-- 세션 상세 조회
-- 해결 여부 수동 표시
-
-### Knowledge Base
-
-- JSON 또는 multipart 업로드
-- 지원 확장자: `pdf`, `docx`, `txt`, `md`
-- 문서 목록 및 상세
-- soft delete
-- 검색 결과 relevance score 반환
-
-### 티켓
-
-- 채팅 세션에서 티켓 생성
-- 카테고리: `account`, `device`, `network`, `system`, `security`, `other`
-- 상태: `open`, `in_progress`, `resolved`, `on_hold`, `closed`
-- 우선순위: `low`, `medium`, `high`, `urgent`
-- 댓글/내부 메모
-- IT 담당자 빠른 처리
-- 통계 API
-
-## 권한 규칙
+## Roles
 
 ### Employee
 
-- 본인 채팅 세션만 조회 가능
-- 본인 티켓만 조회 가능
-- 본인 티켓에 공개 댓글 작성 가능
-- KB 문서 목록/상세/검색 가능
+- Access own chat sessions
+- Access own tickets
+- Add public comments to own tickets
+- Search and read KB documents
 
-### IT Staff / Admin
+### IT Staff
 
-- KB 업로드/삭제 가능
-- 전체 티켓 조회 가능
-- 티켓 상태/우선순위/담당자 변경 가능
-- 내부 메모 작성 가능
-- 티켓 통계 조회 가능
+- All employee capabilities
+- View all tickets
+- Update ticket workflow fields
+- Add internal comments
+- Upload and delete KB documents
+- View ticket statistics
 
-## 테스트 기준 구현 범위
+### Admin
 
-현재 백엔드 테스트는 아래 범위를 직접 검증합니다.
-
-- 헬스체크
-- 인증 API
-- 채팅 API
-- KB API
-- 티켓 API
+- All IT staff capabilities
+- View admin dashboard
+- Manage users
+- Manage persistent system settings

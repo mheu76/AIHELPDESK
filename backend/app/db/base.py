@@ -26,3 +26,4 @@ def import_models():
     from app.models import chat  # noqa: F401
     from app.models import kb_document  # noqa: F401
     from app.models import ticket  # noqa: F401
+    from app.models import settings  # noqa: F401

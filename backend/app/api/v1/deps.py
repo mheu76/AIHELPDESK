@@ -2,7 +2,7 @@
 FastAPI dependencies for request handling.
 Provides database sessions, current user, LLM instances, etc.
 """
-from typing import AsyncGenerator, Optional, Dict, Any, List, AsyncIterator
+from typing import Optional, Dict, Any, List, AsyncIterator
 from fastapi import Depends
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +58,7 @@ class StubLLM(LLMBase):
         return len(text.split())
 
 
-def get_llm() -> LLMBase:
+async def get_llm(db: AsyncSession = Depends(get_db)) -> LLMBase:
     """
     Get LLM instance based on configuration.
     Uses runtime settings from SettingsService if available, falls back to environment config.
@@ -70,8 +70,9 @@ def get_llm() -> LLMBase:
         ValueError: If LLM provider is not configured
     """
     # Get runtime settings (may be overridden by admin)
-    provider = SettingsService.get_current_llm_provider()
-    model = SettingsService.get_current_llm_model()
+    runtime_settings = await SettingsService(db).get_runtime_settings()
+    provider = runtime_settings.llm_provider
+    model = runtime_settings.llm_model
 
     if provider == "claude":
         if not settings.ANTHROPIC_API_KEY:

@@ -18,10 +18,10 @@ from app.schemas.chat import (
     SessionDetailResponse
 )
 from app.core.llm import LLMBase
-from app.core.exceptions import NotFoundError, BadRequestError
+from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
-from app.core.config import settings
 from app.services.rag import RAGService
+from app.services.settings import SettingsService
 
 logger = get_logger(__name__)
 
@@ -76,6 +76,7 @@ Use the above information to help answer the user's question. If the context is 
         self.db = db
         self.llm = llm
         self.rag_service = RAGService(db)
+        self.settings_service = SettingsService(db)
 
     async def send_message(
         self,
@@ -111,17 +112,20 @@ Use the above information to help answer the user's question. If the context is 
         await self.db.flush()
 
         # Search knowledge base for relevant context
-        kb_results = await self.rag_service.search_knowledge_base(
-            query=request.message,
-            top_k=settings.RAG_TOP_K
-        )
+        runtime_settings = await self.settings_service.get_runtime_settings()
+        kb_results = []
+        if runtime_settings.rag_enabled:
+            kb_results = await self.rag_service.search_knowledge_base(
+                query=request.message,
+                top_k=runtime_settings.rag_top_k
+            )
 
         # Get conversation history with RAG context
         messages = await self._get_conversation_history(session.id, kb_results)
 
         # Generate AI response
         try:
-            ai_response = await self._generate_ai_response(messages)
+            ai_response = await self._generate_ai_response(messages, runtime_settings)
             token_count = ai_response.get("usage", {}).get("completion_tokens")
 
             # Save AI message
@@ -310,7 +314,7 @@ Use the above information to help answer the user's question. If the context is 
             select(ChatMessage)
             .where(ChatMessage.session_id == session_id)
             .order_by(ChatMessage.created_at)
-            .limit(settings.MAX_CONVERSATION_TURNS * 2)  # user + assistant pairs
+            .limit(20)  # user + assistant pairs
         )
         messages = result.scalars().all()
 
@@ -339,7 +343,8 @@ Use the above information to help answer the user's question. If the context is 
 
     async def _generate_ai_response(
         self,
-        messages: List[Dict[str, str]]
+        messages: List[Dict[str, str]],
+        runtime_settings: Any
     ) -> Dict[str, Any]:
         """
         Generate AI response using LLM.
@@ -352,8 +357,8 @@ Use the above information to help answer the user's question. If the context is 
         """
         response = await self.llm.chat_completion(
             messages=messages,
-            temperature=settings.LLM_TEMPERATURE,
-            max_tokens=settings.LLM_MAX_TOKENS
+            temperature=runtime_settings.llm_temperature,
+            max_tokens=runtime_settings.max_tokens
         )
         return response
 

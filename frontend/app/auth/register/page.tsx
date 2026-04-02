@@ -28,7 +28,6 @@ export default function RegisterPage() {
     e.preventDefault()
     setError("")
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       return
@@ -44,7 +43,6 @@ export default function RegisterPage() {
         password: formData.password,
       })
 
-      // Redirect to login after successful registration
       router.push("/auth/login?registered=true")
     } catch (err) {
       if (err instanceof ApiError) {
@@ -72,10 +70,7 @@ export default function RegisterPage() {
         )}
 
         <div>
-          <label
-            htmlFor="employeeId"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-1">
             Employee ID
           </label>
           <input
@@ -91,10 +86,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
             Full Name
           </label>
           <input
@@ -110,10 +102,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email
           </label>
           <input
@@ -129,10 +118,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
           <input
@@ -143,15 +129,12 @@ export default function RegisterPage() {
             value={formData.password}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="••••••••"
+            placeholder="Create a password"
           />
         </div>
 
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
             Confirm Password
           </label>
           <input
@@ -162,7 +145,7 @@ export default function RegisterPage() {
             value={formData.confirmPassword}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="••••••••"
+            placeholder="Re-enter your password"
           />
         </div>
 
@@ -178,10 +161,7 @@ export default function RegisterPage() {
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Already have an account?{" "}
-          <Link
-            href="/auth/login"
-            className="text-primary-600 hover:text-primary-700 font-medium"
-          >
+          <Link href="/auth/login" className="text-primary-600 hover:text-primary-700 font-medium">
             Sign In
           </Link>
         </p>

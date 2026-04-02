@@ -48,10 +48,7 @@ export default function LoginPage() {
         )}
 
         <div>
-          <label
-            htmlFor="employeeId"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
+          <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-2">
             Employee ID
           </label>
           <input
@@ -66,10 +63,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
           <input
@@ -79,7 +73,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="••••••••"
+            placeholder="Enter your password"
           />
         </div>
 
@@ -95,10 +89,7 @@ export default function LoginPage() {
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Don't have an account?{" "}
-          <Link
-            href="/auth/register"
-            className="text-primary-600 hover:text-primary-700 font-medium"
-          >
+          <Link href="/auth/register" className="text-primary-600 hover:text-primary-700 font-medium">
             Register
           </Link>
         </p>

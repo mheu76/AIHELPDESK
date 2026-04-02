@@ -115,15 +115,16 @@ async def update_user(
     summary="Get system settings"
 )
 async def get_settings(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get current system settings including LLM configuration.
 
     Requires admin role.
     """
-    service = SettingsService()
-    return service.get_settings(current_user)
+    service = SettingsService(db)
+    return await service.get_settings(current_user)
 
 
 @router.patch(
@@ -133,7 +134,8 @@ async def get_settings(
 )
 async def update_settings(
     update_data: SystemSettingsUpdateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Update system settings. Changes apply immediately.
@@ -142,5 +144,5 @@ async def update_settings(
 
     Requires admin role.
     """
-    service = SettingsService()
-    return service.update_settings(current_user, update_data)
+    service = SettingsService(db)
+    return await service.update_settings(current_user, update_data)

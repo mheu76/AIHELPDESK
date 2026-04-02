@@ -1,6 +1,6 @@
 # 05. UI Spec
 
-## 현재 라우트
+## Routes
 
 - `/`
 - `/auth/login`
@@ -9,74 +9,76 @@
 - `/tickets`
 - `/tickets/[id]`
 - `/kb`
+- `/admin`
+- `/admin/users`
+- `/admin/settings`
 
-## 라우트 상태
+## Route Behavior
 
 ### `/`
 
-- `/auth/login`으로 리다이렉트
+- Redirects to `/auth/login`
 
 ### `/auth/login`
 
-- 직원 번호 + 비밀번호 로그인
-- 성공 시 `/chat` 이동
+- Employee ID and password login form
+- Successful login navigates to `/chat`
 
 ### `/auth/register`
 
-- 회원가입 폼
-- 성공 시 로그인 페이지 이동
+- Self-service registration form
+- Successful registration navigates to `/auth/login`
 
 ### `/chat`
 
-- 좌측: 채팅 세션 목록
-- 우측: 현재 대화
-- 새 대화 시작
-- 현재 세션에서 티켓 생성 버튼 제공
+- Left panel: chat sessions
+- Main panel: current conversation
+- Ticket creation from a selected conversation
 
-현재 제약:
+Current gap:
 
-- 메시지 스트리밍 없음
-- 세션 resolve 토글 UI 없음
-- URL 쿼리로 세션 직접 선택하는 동작은 일부 화면에서만 암묵적으로 기대함
+- No SSE/streaming response UI yet
 
 ### `/tickets`
 
-- 티켓 목록 테이블
-- 상태/카테고리 필터
-- IT 담당자용 빠른 처리 버튼
-- 상세 페이지 이동
+- Ticket table
+- Status/category filters
+- IT staff quick actions
+- Row click navigates to detail page
 
 ### `/tickets/[id]`
 
-- 티켓 헤더
-- 상태/우선순위 표시
-- 설명 본문
-- 댓글 목록
-- 댓글 작성
-- IT 담당자 수정 폼
+- Ticket header and metadata
+- Description
+- Comments
+- Comment form
+- IT staff edit controls
 
 ### `/kb`
 
-- 문서 드래그앤드롭 업로드
-- 문서 목록
-- 문서 상세
-- KB 검색 결과
-- 문서 삭제
+- File upload
+- Document list
+- Search panel
+- Detail panel
 
-## 공통 인증 UX
+### `/admin`
 
-- `AuthProvider`가 `localStorage`의 인증 상태를 유지
-- `chat` 레이아웃에서 비로그인 사용자를 로그인 페이지로 이동
-- 티켓/KB 페이지는 개별 로직으로 토큰 확인
+- Dashboard summary cards
+- Recent activities
 
-## 현재 구현 컴포넌트
+### `/admin/users`
+
+- User list
+- Filters
+- Inline edit modal
+
+### `/admin/settings`
+
+- Runtime LLM and RAG configuration
+- Save and reset interactions
+
+## Shared UI Components
 
 - `AuthProvider`
 - `ErrorBoundary`
 - `TicketQuickActions`
-
-## 화면 품질 메모
-
-- 티켓과 KB 화면은 기능 중심으로 구현되어 있음
-- 일부 한글 문자열은 소스 인코딩 정리가 필요
-- 전역 네비게이션과 관리자 전용 레이아웃은 아직 부족함

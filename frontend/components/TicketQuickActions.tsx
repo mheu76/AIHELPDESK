@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ticketApi, User, Ticket } from '@/lib/api';
+import { ticketApi, Ticket, User } from '@/lib/api';
 
 interface TicketQuickActionsProps {
   ticket: Ticket;
@@ -16,13 +16,13 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
   if (!isITStaff) return null;
 
   const handleAssignToMe = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent row click
-
+    e.stopPropagation();
     setIsUpdating(true);
+
     try {
       await ticketApi.updateTicket(ticket.id, {
         assignee_id: user.id,
-        status: 'in_progress'
+        status: 'in_progress',
       });
       onUpdate();
     } catch (err) {
@@ -34,11 +34,11 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
 
   const handleMarkResolved = async (e: React.MouseEvent) => {
     e.stopPropagation();
-
     setIsUpdating(true);
+
     try {
       await ticketApi.updateTicket(ticket.id, {
-        status: 'resolved'
+        status: 'resolved',
       });
       onUpdate();
     } catch (err) {
@@ -56,10 +56,10 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
         <button
           onClick={handleAssignToMe}
           disabled={isUpdating}
-          className="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors disabled:opacity-50"
-          title="나에게 할당하고 진행중으로 변경"
+          className="rounded-md bg-blue-100 px-3 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-200 disabled:opacity-50"
+          title="Assign this ticket to me and mark it in progress"
         >
-          {isUpdating ? '...' : '담당하기'}
+          {isUpdating ? '...' : 'Assign'}
         </button>
       )}
 
@@ -67,10 +67,10 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
         <button
           onClick={handleMarkResolved}
           disabled={isUpdating}
-          className="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors disabled:opacity-50"
-          title="티켓을 해결됨으로 표시"
+          className="rounded-md bg-green-100 px-3 py-1 text-xs text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
+          title="Mark this ticket as resolved"
         >
-          {isUpdating ? '...' : '해결완료'}
+          {isUpdating ? '...' : 'Resolve'}
         </button>
       )}
     </div>

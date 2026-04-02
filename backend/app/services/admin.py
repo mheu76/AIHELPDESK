@@ -68,7 +68,8 @@ class AdminService:
         total_kb_documents = total_kb_result.scalar_one()
 
         # Current LLM provider
-        llm_provider = SettingsService.get_current_llm_provider()
+        runtime_settings = await SettingsService(self.db).get_runtime_settings()
+        llm_provider = runtime_settings.llm_provider
 
         # Recent activities
         recent_activities = await self._get_recent_activities()
