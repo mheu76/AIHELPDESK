@@ -1,7 +1,7 @@
 """
 Chat service for AI conversation management.
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
@@ -156,6 +156,125 @@ Use the above information to help answer the user's question. If the context is 
             await self.db.rollback()
             logger.error(f"Error generating AI response: {str(e)}")
             raise
+
+    async def send_streaming_message(
+        self,
+        user: User,
+        request: ChatRequest
+    ) -> AsyncIterator[str]:
+        """
+        Process user message and stream AI response as NDJSON chunks.
+
+        Args:
+            user: Current user
+            request: Chat request with message and optional session_id
+
+        Yields:
+            NDJSON strings (one JSON object per yield)
+
+        Raises:
+            NotFoundError: If session_id is provided but not found
+        """
+        import json
+
+        # Get or create session
+        if request.session_id:
+            session = await self._get_session(request.session_id, user.id)
+        else:
+            session = await self._create_session(user.id)
+
+        # Save user message
+        user_message = ChatMessage(
+            session_id=session.id,
+            role=MessageRole.USER.value,
+            content=request.message
+        )
+        self.db.add(user_message)
+        await self.db.flush()
+
+        # Search knowledge base for relevant context
+        runtime_settings = await self.settings_service.get_runtime_settings()
+        kb_results = []
+        if runtime_settings.rag_enabled:
+            kb_results = await self.rag_service.search_knowledge_base(
+                query=request.message,
+                top_k=runtime_settings.rag_top_k
+            )
+
+        # Get conversation history with RAG context
+        messages = await self._get_conversation_history(session.id, kb_results)
+
+        # Stream AI response
+        accumulated_content = ""
+        token_count = 0
+
+        try:
+            async for text_chunk in self.llm.chat_completion_stream(
+                messages=messages,
+                temperature=runtime_settings.llm_temperature,
+                max_tokens=runtime_settings.max_tokens
+            ):
+                accumulated_content += text_chunk
+                token_count += 1
+
+                # Yield token chunk
+                yield json.dumps({
+                    "type": "token",
+                    "content": text_chunk
+                })
+
+            # Save AI message to database
+            ai_message = ChatMessage(
+                session_id=session.id,
+                role=MessageRole.ASSISTANT.value,
+                content=accumulated_content,
+                token_count=token_count
+            )
+            self.db.add(ai_message)
+
+            # Generate title when starting a new session
+            if not session.title and request.session_id is None:
+                session.title = await self._generate_session_title(request.message)
+
+            await self.db.commit()
+            await self.db.refresh(ai_message)
+
+            logger.info(f"Streaming chat completed for session {session.id}")
+
+            # Yield done chunk with metadata
+            yield json.dumps({
+                "type": "done",
+                "session_id": str(session.id),
+                "message_id": str(ai_message.id),
+                "usage": {
+                    "completion_tokens": token_count
+                }
+            })
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Error streaming AI response: {str(e)}")
+
+            # Try to save partial response if we have content
+            if accumulated_content:
+                try:
+                    ai_message = ChatMessage(
+                        session_id=session.id,
+                        role=MessageRole.ASSISTANT.value,
+                        content=accumulated_content + f"\n\n[Error: {str(e)}]",
+                        token_count=token_count
+                    )
+                    self.db.add(ai_message)
+                    await self.db.commit()
+                except Exception as db_error:
+                    logger.error(f"Failed to save partial response: {str(db_error)}")
+
+            # Yield error chunk
+            yield json.dumps({
+                "type": "error",
+                "message": f"Streaming error: {str(e)}",
+                "code": "STREAM_ERROR"
+            })
 
     async def get_user_sessions(
         self,
