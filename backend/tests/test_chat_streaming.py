@@ -50,3 +50,41 @@ async def test_send_streaming_message_yields_chunks(test_db, test_user):
     assert chunks[3]["type"] == "done"
     assert "session_id" in chunks[3]
     assert "message_id" in chunks[3]
+
+
+@pytest.mark.asyncio
+async def test_send_streaming_message_handles_stream_error(test_db, test_user):
+    """Test that streaming handles errors and preserves partial content."""
+    # Mock LLM streaming that fails after 2 chunks
+    async def mock_stream_with_error(*args, **kwargs):
+        yield "Partial"
+        yield " response"
+        raise Exception("API timeout")
+
+    mock_llm = MagicMock()
+    mock_llm.chat_completion_stream = mock_stream_with_error
+
+    # Mock settings service
+    mock_settings = AsyncMock()
+    mock_settings.get_runtime_settings = AsyncMock(return_value=MagicMock(
+        rag_enabled=False,
+        llm_temperature=0.7,
+        max_tokens=1000
+    ))
+
+    chat_service = ChatService(test_db, mock_llm)
+    chat_service.settings_service = mock_settings
+
+    request = ChatRequest(message="Test error handling")
+
+    # Collect chunks
+    chunks = []
+    async for chunk_str in chat_service.send_streaming_message(test_user, request):
+        chunks.append(json.loads(chunk_str))
+
+    # Verify partial content yielded + error
+    assert len(chunks) == 3  # 2 tokens + 1 error
+    assert chunks[0] == {"type": "token", "content": "Partial"}
+    assert chunks[1] == {"type": "token", "content": " response"}
+    assert chunks[2]["type"] == "error"
+    assert "API timeout" in chunks[2]["message"]
