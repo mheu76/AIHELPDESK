@@ -216,38 +216,38 @@ export default function ChatPage() {
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-gray-50">
-        {currentSessionId ? (
-          <>
-            {/* Chat Header with Create Ticket Button */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3">
-              <div className="max-w-3xl mx-auto flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  {sessions.find(s => s.id === currentSessionId)?.title || "Current Conversation"}
-                </div>
-                <button
-                  onClick={handleCreateTicket}
-                  disabled={isCreatingTicket}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  {isCreatingTicket ? "생성 중..." : "티켓 생성"}
-                </button>
+        {/* Chat Header with Create Ticket Button - only show if session exists */}
+        {currentSessionId && (
+          <div className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {sessions.find(s => s.id === currentSessionId)?.title || "Current Conversation"}
               </div>
+              <button
+                onClick={handleCreateTicket}
+                disabled={isCreatingTicket}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {isCreatingTicket ? "생성 중..." : "티켓 생성"}
+              </button>
             </div>
+          </div>
+        )}
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500">
-                  Loading messages...
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No messages yet
-                </div>
-              ) : (
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">
+              Loading messages...
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              {currentSessionId ? "No messages yet" : "Start a new conversation"}
+            </div>
+          ) : (
                 <div className="max-w-3xl mx-auto space-y-4">
                   {messages.map((message) => (
                     <div
@@ -293,56 +293,37 @@ export default function ChatPage() {
                   <div ref={messagesEndRef} />
                 </div>
               )}
-            </div>
+        </div>
 
-            {/* Error Display */}
-            {error && (
-              <div className="px-4 py-2 bg-red-50 border-t border-red-200 text-red-800 text-sm">
-                {error}
-              </div>
-            )}
-
-            {/* Input Area */}
-            <div className="bg-white border-t border-gray-200 p-4">
-              <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Type your IT question..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    disabled={isSending || isStreaming}
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSending || isStreaming || !inputMessage.trim()}
-                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isStreaming ? "Streaming..." : isSending ? "Sending..." : "Send"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Welcome to IT AI Helpdesk
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Select a conversation or start a new chat
-              </p>
-              <button
-                onClick={startNewChat}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
-              >
-                Start New Chat
-              </button>
-            </div>
+        {/* Error Display */}
+        {error && (
+          <div className="px-4 py-2 bg-red-50 border-t border-red-200 text-red-800 text-sm">
+            {error}
           </div>
         )}
+
+        {/* Input Area */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Type your IT question..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                disabled={isSending || isStreaming}
+              />
+              <button
+                type="submit"
+                disabled={isSending || isStreaming || !inputMessage.trim()}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStreaming ? "Streaming..." : isSending ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )
