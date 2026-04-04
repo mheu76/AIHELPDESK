@@ -3,8 +3,8 @@ import { AuthProvider } from "@/components/auth-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "IT AI Helpdesk",
-  description: "Internal IT helpdesk system with AI assistance",
+  title: "IT AI 헬프데스크",
+  description: "AI 기반 사내 IT 지원 시스템",
 }
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body className="min-h-screen bg-gray-50">
         <AuthProvider>{children}</AuthProvider>
       </body>

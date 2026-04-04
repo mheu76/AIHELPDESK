@@ -24,7 +24,7 @@ export default function AdminLayout({
     if (userStr) {
       const userData = JSON.parse(userStr)
       if (userData.role !== "admin") {
-        alert("Access denied. Admin only.")
+        alert("접근 거부. 관리자 전용입니다.")
         router.push("/chat")
         return
       }
@@ -36,7 +36,7 @@ export default function AdminLayout({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">로딩 중...</div>
       </div>
     )
   }
@@ -52,25 +52,25 @@ export default function AdminLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+              <h1 className="text-xl font-bold text-gray-900">관리자 대시보드</h1>
               <nav className="flex space-x-4">
                 <Link
                   href="/admin"
                   className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Dashboard
+                  대시보드
                 </Link>
                 <Link
                   href="/admin/users"
                   className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Users
+                  사용자
                 </Link>
                 <Link
                   href="/admin/settings"
                   className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Settings
+                  설정
                 </Link>
               </nav>
             </div>
@@ -79,7 +79,7 @@ export default function AdminLayout({
                 href="/chat"
                 className="text-sm text-gray-600 hover:text-gray-900"
               >
-                Back to Chat
+                채팅으로 돌아가기
               </Link>
               <div className="text-sm text-gray-600">
                 {user.full_name} ({user.role})

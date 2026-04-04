@@ -21,7 +21,7 @@ export default function ChatLayout({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">로딩 중...</div>
       </div>
     )
   }
@@ -57,7 +57,7 @@ function ChatLayoutContent({
               onClick={logout}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
-              Logout
+              로그아웃
             </button>
           </div>
         </div>

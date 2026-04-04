@@ -57,9 +57,9 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
           onClick={handleAssignToMe}
           disabled={isUpdating}
           className="rounded-md bg-blue-100 px-3 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-200 disabled:opacity-50"
-          title="Assign this ticket to me and mark it in progress"
+          title="이 티켓을 나에게 할당하고 진행 중으로 표시"
         >
-          {isUpdating ? '...' : 'Assign'}
+          {isUpdating ? '...' : '할당'}
         </button>
       )}
 
@@ -68,9 +68,9 @@ export default function TicketQuickActions({ ticket, user, onUpdate }: TicketQui
           onClick={handleMarkResolved}
           disabled={isUpdating}
           className="rounded-md bg-green-100 px-3 py-1 text-xs text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
-          title="Mark this ticket as resolved"
+          title="이 티켓을 해결됨으로 표시"
         >
-          {isUpdating ? '...' : 'Resolve'}
+          {isUpdating ? '...' : '해결'}
         </button>
       )}
     </div>
