@@ -26,7 +26,7 @@ export default function LoginPage() {
       if (err instanceof ApiError) {
         setError(err.message)
       } else {
-        setError("An unexpected error occurred")
+        setError("예기치 않은 오류가 발생했습니다")
       }
     } finally {
       setIsLoading(false)
@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div className="bg-white shadow-xl rounded-lg p-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">IT AI Helpdesk</h1>
-        <p className="text-gray-600 mt-2">Sign in to your account</p>
+        <p className="text-gray-600 mt-2">계정에 로그인하세요</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
         <div>
           <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-2">
-            Employee ID
+            사번
           </label>
           <input
             id="employeeId"
@@ -64,7 +64,7 @@ export default function LoginPage() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-            Password
+            비밀번호
           </label>
           <input
             id="password"
@@ -73,7 +73,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="Enter your password"
+            placeholder="비밀번호를 입력하세요"
           />
         </div>
 
@@ -82,15 +82,15 @@ export default function LoginPage() {
           disabled={isLoading}
           className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Signing in..." : "Sign In"}
+          {isLoading ? "로그인 중..." : "로그인"}
         </button>
       </form>
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Don't have an account?{" "}
+          계정이 없으신가요?{" "}
           <Link href="/auth/register" className="text-primary-600 hover:text-primary-700 font-medium">
-            Register
+            회원가입
           </Link>
         </p>
       </div>

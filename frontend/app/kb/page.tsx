@@ -32,9 +32,9 @@ export default function KBManagementPage() {
       setDocuments(response.documents);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
-        setError('Only admins and IT staff can manage the knowledge base.');
+        setError('관리자와 IT 담당자만 지식 베이스를 관리할 수 있습니다.');
       } else {
-        setError('Failed to load documents.');
+        setError('문서를 불러오는데 실패했습니다.');
       }
     } finally {
       setLoading(false);
@@ -48,7 +48,7 @@ export default function KBManagementPage() {
       setSelectedDocument(document);
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to load document details.');
+      setError(err instanceof ApiError ? err.message : '문서 상세 정보를 불러오는데 실패했습니다.');
     } finally {
       setDetailLoading(false);
     }
@@ -58,11 +58,11 @@ export default function KBManagementPage() {
     const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0];
 
     if (!extension || !SUPPORTED_EXTENSIONS.includes(extension)) {
-      return `Unsupported file type. Allowed: ${SUPPORTED_EXTENSIONS.join(', ')}`;
+      return `지원하지 않는 파일 형식입니다. 허용: ${SUPPORTED_EXTENSIONS.join(', ')}`;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return 'File size must be 10MB or smaller.';
+      return '파일 크기는 10MB 이하여야 합니다.';
     }
 
     return null;
@@ -101,7 +101,7 @@ export default function KBManagementPage() {
         setUploadProgress(null);
       }, 1000);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Upload failed.');
+      setError(err instanceof ApiError ? err.message : '업로드에 실패했습니다.');
     } finally {
       if (progressInterval) clearInterval(progressInterval);
       setUploading(false);
@@ -109,7 +109,7 @@ export default function KBManagementPage() {
   };
 
   const handleDelete = async (docId: string) => {
-    if (!window.confirm('Delete this document?')) return;
+    if (!window.confirm('이 문서를 삭제하시겠습니까?')) return;
 
     try {
       await kbApi.deleteDocument(docId);
@@ -121,7 +121,7 @@ export default function KBManagementPage() {
         prev.filter((result) => result.metadata.document_id !== docId && result.metadata.id !== docId)
       );
     } catch {
-      setError('Delete failed.');
+      setError('삭제에 실패했습니다.');
     }
   };
 
@@ -135,7 +135,7 @@ export default function KBManagementPage() {
       const response = await kbApi.search(searchQuery.trim(), 5);
       setSearchResults(response.results);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Search failed.');
+      setError(err instanceof ApiError ? err.message : '검색에 실패했습니다.');
     } finally {
       setSearching(false);
     }
@@ -189,15 +189,15 @@ export default function KBManagementPage() {
               onClick={() => router.push('/chat')}
               className="mb-4 text-sm text-gray-600 hover:text-gray-900"
             >
-              Back to chat
+              채팅으로 돌아가기
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
+            <h1 className="text-3xl font-bold text-gray-900">지식 베이스</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Upload internal guides and search the document corpus used by the assistant.
+              내부 가이드를 업로드하고 AI 어시스턴트가 사용하는 문서를 검색합니다.
             </p>
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-            <div className="font-semibold">Documents</div>
+            <div className="font-semibold">문서</div>
             <div className="mt-1 text-2xl font-bold">{documents.length}</div>
           </div>
         </div>
@@ -230,9 +230,9 @@ export default function KBManagementPage() {
               />
 
               <p className="text-sm text-gray-600">
-                {uploading ? 'Uploading document...' : 'Drop a file here or click to upload.'}
+                {uploading ? '문서 업로드 중...' : '파일을 여기에 드롭하거나 클릭하여 업로드하세요.'}
               </p>
-              <p className="mt-2 text-xs text-gray-500">PDF, DOCX, TXT, MD up to 10MB.</p>
+              <p className="mt-2 text-xs text-gray-500">PDF, DOCX, TXT, MD 최대 10MB.</p>
 
               {uploadProgress !== null && (
                 <div className="mx-auto mt-4 max-w-xs">
@@ -242,31 +242,31 @@ export default function KBManagementPage() {
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{uploadProgress}% complete</p>
+                  <p className="mt-1 text-xs text-gray-500">{uploadProgress}% 완료</p>
                 </div>
               )}
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-200 px-5 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
-                <p className="mt-1 text-sm text-gray-500">Select a document to inspect its details.</p>
+                <h2 className="text-lg font-semibold text-gray-900">문서</h2>
+                <p className="mt-1 text-sm text-gray-500">문서를 선택하여 상세 정보를 확인하세요.</p>
               </div>
 
               {loading ? (
-                <div className="py-12 text-center text-sm text-gray-500">Loading documents...</div>
+                <div className="py-12 text-center text-sm text-gray-500">문서 로딩 중...</div>
               ) : documents.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-500">No documents uploaded yet.</div>
+                <div className="py-12 text-center text-sm text-gray-500">아직 업로드된 문서가 없습니다.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Document</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Chunks</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Action</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">문서</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">형식</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">청크</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">생성일</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">작업</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
@@ -293,7 +293,7 @@ export default function KBManagementPage() {
                               }}
                               className="text-red-600 hover:text-red-900"
                             >
-                              Delete
+                              삭제
                             </button>
                           </td>
                         </tr>
@@ -308,8 +308,8 @@ export default function KBManagementPage() {
           <section className="space-y-6">
             <div className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-200 px-5 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">Search</h2>
-                <p className="mt-1 text-sm text-gray-500">Search the knowledge base and inspect matching documents.</p>
+                <h2 className="text-lg font-semibold text-gray-900">검색</h2>
+                <p className="mt-1 text-sm text-gray-500">지식 베이스를 검색하고 일치하는 문서를 확인합니다.</p>
               </div>
 
               <form onSubmit={handleSearch} className="space-y-4 px-5 py-4">
@@ -317,7 +317,7 @@ export default function KBManagementPage() {
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Example: password reset policy"
+                    placeholder="예시: 비밀번호 재설정 정책"
                     className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   <button
@@ -325,14 +325,14 @@ export default function KBManagementPage() {
                     disabled={searching || !searchQuery.trim()}
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {searching ? 'Searching...' : 'Search'}
+                    {searching ? '검색 중...' : '검색'}
                   </button>
                 </div>
               </form>
 
               <div className="border-t border-gray-100 px-5 py-4">
                 {searchResults.length === 0 ? (
-                  <p className="text-sm text-gray-500">No search results yet.</p>
+                  <p className="text-sm text-gray-500">아직 검색 결과가 없습니다.</p>
                 ) : (
                   <div className="space-y-3">
                     {searchResults.map((result, index) => (
@@ -346,7 +346,7 @@ export default function KBManagementPage() {
                             {result.metadata.title ?? 'Untitled'}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Score {typeof result.relevance_score === 'number' ? result.relevance_score.toFixed(2) : '-'}
+                            점수 {typeof result.relevance_score === 'number' ? result.relevance_score.toFixed(2) : '-'}
                           </div>
                         </div>
                         <div className="mt-1 text-xs uppercase tracking-wide text-gray-500">
@@ -362,39 +362,39 @@ export default function KBManagementPage() {
 
             <div className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-200 px-5 py-4">
-                <h2 className="text-lg font-semibold text-gray-900">Document details</h2>
-                <p className="mt-1 text-sm text-gray-500">Metadata and extracted content for the selected document.</p>
+                <h2 className="text-lg font-semibold text-gray-900">문서 상세</h2>
+                <p className="mt-1 text-sm text-gray-500">선택한 문서의 메타데이터 및 추출된 내용입니다.</p>
               </div>
 
               {detailLoading ? (
-                <div className="px-5 py-12 text-center text-sm text-gray-500">Loading document details...</div>
+                <div className="px-5 py-12 text-center text-sm text-gray-500">문서 상세 정보 로딩 중...</div>
               ) : selectedDocument ? (
                 <div className="space-y-5 px-5 py-4">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <InfoCard label="Title" value={selectedDocument.title} />
-                    <InfoCard label="File name" value={selectedDocument.file_name} />
+                    <InfoCard label="제목" value={selectedDocument.title} />
+                    <InfoCard label="파일 이름" value={selectedDocument.file_name} />
                     <InfoCard
-                      label="Type / Size"
+                      label="형식 / 크기"
                       value={`${selectedDocument.file_type.toUpperCase()} / ${formatFileSize(selectedDocument.file_size)}`}
                     />
                     <InfoCard
-                      label="Chunks / Created"
+                      label="청크 / 생성일"
                       value={`${selectedDocument.chunk_count} / ${formatDate(selectedDocument.created_at)}`}
                     />
                   </div>
 
                   <div>
-                    <div className="mb-2 text-sm font-semibold text-gray-900">Content</div>
+                    <div className="mb-2 text-sm font-semibold text-gray-900">내용</div>
                     <div className="max-h-[420px] overflow-y-auto rounded-lg bg-slate-950 p-4 text-sm leading-6 text-slate-100">
                       <pre className="whitespace-pre-wrap break-words font-sans">
-                        {selectedDocument.content?.trim() || 'No extracted content.'}
+                        {selectedDocument.content?.trim() || '추출된 내용이 없습니다.'}
                       </pre>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="px-5 py-12 text-center text-sm text-gray-500">
-                  Select a document from the list or search results.
+                  목록 또는 검색 결과에서 문서를 선택하세요.
                 </div>
               )}
             </div>

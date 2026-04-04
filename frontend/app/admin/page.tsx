@@ -19,14 +19,14 @@ export default function AdminDashboard() {
       setStats(data)
       setError(null)
     } catch (err: any) {
-      setError(err.message || "Failed to load dashboard")
+      setError(err.message || "대시보드를 불러오는데 실패했습니다")
     } finally {
       setLoading(false)
     }
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading dashboard...</div>
+    return <div className="text-center py-8">대시보드 로딩 중...</div>
   }
 
   if (error) {
@@ -43,17 +43,17 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
+      <h2 className="text-2xl font-bold text-gray-900">시스템 현황</h2>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard title="Total Users" value={stats.total_users} />
-        <StatCard title="Active Users" value={stats.active_users} />
-        <StatCard title="Chat Sessions" value={stats.total_sessions} />
-        <StatCard title="Total Tickets" value={stats.total_tickets} />
-        <StatCard title="KB Documents" value={stats.total_kb_documents} />
+        <StatCard title="전체 사용자" value={stats.total_users} />
+        <StatCard title="활성 사용자" value={stats.active_users} />
+        <StatCard title="채팅 세션" value={stats.total_sessions} />
+        <StatCard title="전체 티켓" value={stats.total_tickets} />
+        <StatCard title="지식 베이스 문서" value={stats.total_kb_documents} />
         <StatCard
-          title="LLM Provider"
+          title="LLM 제공자"
           value={stats.llm_provider.toUpperCase()}
           valueClass="text-blue-600"
         />
@@ -62,11 +62,11 @@ export default function AdminDashboard() {
       {/* Recent Activities */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
+          <h3 className="text-lg font-semibold text-gray-900">최근 활동</h3>
         </div>
         <div className="p-6">
           {stats.recent_activities.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No recent activities</p>
+            <p className="text-gray-500 text-center py-4">최근 활동이 없습니다</p>
           ) : (
             <div className="space-y-4">
               {stats.recent_activities.map((activity, idx) => (

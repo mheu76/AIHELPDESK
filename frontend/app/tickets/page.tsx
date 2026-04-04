@@ -65,7 +65,7 @@ export default function TicketsPage() {
       setTickets(response.tickets);
       setTotal(response.total);
     } catch (err: any) {
-      setError(err.message || 'Failed to load tickets');
+      setError(err.message || '티켓 목록을 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
     }
@@ -101,14 +101,14 @@ export default function TicketsPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
-          <p className="mt-2 text-gray-600">Review and manage support requests.</p>
+          <h1 className="text-3xl font-bold text-gray-900">티켓</h1>
+          <p className="mt-2 text-gray-600">지원 요청을 확인하고 관리합니다.</p>
         </div>
 
         <div className="rounded-lg bg-white p-6 shadow-sm">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Status</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">상태</label>
               <select
                 value={statusFilter}
                 onChange={(e) => {
@@ -117,16 +117,16 @@ export default function TicketsPage() {
                 }}
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
               >
-                <option value="">All</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="on_hold">On hold</option>
-                <option value="closed">Closed</option>
+                <option value="">전체</option>
+                <option value="open">열림</option>
+                <option value="in_progress">진행 중</option>
+                <option value="resolved">해결됨</option>
+                <option value="on_hold">대기 중</option>
+                <option value="closed">닫힘</option>
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Category</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">카테고리</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => {
@@ -135,13 +135,13 @@ export default function TicketsPage() {
                 }}
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
               >
-                <option value="">All</option>
-                <option value="account">Account</option>
-                <option value="device">Device</option>
-                <option value="network">Network</option>
-                <option value="system">System</option>
-                <option value="security">Security</option>
-                <option value="other">Other</option>
+                <option value="">전체</option>
+                <option value="account">계정</option>
+                <option value="device">장비</option>
+                <option value="network">네트워크</option>
+                <option value="system">시스템</option>
+                <option value="security">보안</option>
+                <option value="other">기타</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -154,7 +154,7 @@ export default function TicketsPage() {
                 }}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
               >
-                Reset filters
+                필터 초기화
               </button>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function TicketsPage() {
                   }}
                   className="rounded border-gray-300"
                 />
-                Show only tickets assigned to me
+                내게 할당된 티켓만 보기
               </label>
             </div>
           )}
@@ -185,23 +185,23 @@ export default function TicketsPage() {
 
         <div className="overflow-hidden rounded-lg bg-white shadow-sm">
           {loading ? (
-            <div className="p-12 text-center text-gray-500">Loading tickets...</div>
+            <div className="p-12 text-center text-gray-500">티켓 로딩 중...</div>
           ) : tickets.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">No tickets found.</div>
+            <div className="p-12 text-center text-gray-500">티켓이 없습니다.</div>
           ) : (
             <>
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">No.</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Assignee</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">번호</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">제목</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">카테고리</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">상태</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">우선순위</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">담당자</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">생성일</th>
                     {isITStaff && (
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Quick actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">빠른 작업</th>
                     )}
                   </tr>
                 </thead>
@@ -248,7 +248,7 @@ export default function TicketsPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
                   <div className="text-sm text-gray-700">
-                    Total <span className="font-medium">{total}</span> tickets, page {page} of {totalPages}
+                    총 <span className="font-medium">{total}</span>개 티켓, {page}/{totalPages} 페이지
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -256,14 +256,14 @@ export default function TicketsPage() {
                       disabled={page === 1}
                       className="rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
                     >
-                      Previous
+                      이전
                     </button>
                     <button
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
                       className="rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-50"
                     >
-                      Next
+                      다음
                     </button>
                   </div>
                 </div>

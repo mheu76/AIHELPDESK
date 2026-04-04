@@ -25,7 +25,7 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     if (!ticketId) {
-      setError('Invalid ticket id');
+      setError('유효하지 않은 티켓 ID입니다');
       setLoading(false);
       return;
     }
@@ -54,11 +54,11 @@ export default function TicketDetailPage() {
       setEditPriority(ticketData.priority);
     } catch (err: any) {
       if (err.status === 403) {
-        setError('You do not have permission to view this ticket.');
+        setError('이 티켓을 볼 권한이 없습니다.');
       } else if (err.status === 404) {
-        setError('Ticket not found.');
+        setError('티켓을 찾을 수 없습니다.');
       } else {
-        setError(err.message || 'Failed to load ticket.');
+        setError(err.message || '티켓을 불러오는데 실패했습니다.');
       }
     } finally {
       setLoading(false);
@@ -84,9 +84,9 @@ export default function TicketDetailPage() {
       setIsInternal(false);
     } catch (err: any) {
       if (err.status === 403) {
-        setError('Only IT staff can create internal notes.');
+        setError('IT 담당자만 내부 노트를 작성할 수 있습니다.');
       } else {
-        setError(err.message || 'Failed to add comment.');
+        setError(err.message || '댓글 추가에 실패했습니다.');
       }
     } finally {
       setSubmittingComment(false);
@@ -109,7 +109,7 @@ export default function TicketDetailPage() {
       setTicket(updated);
       setIsEditing(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to update ticket.');
+      setError(err.message || '티켓 업데이트에 실패했습니다.');
     } finally {
       setSubmittingUpdate(false);
     }
@@ -140,20 +140,20 @@ export default function TicketDetailPage() {
     });
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-600">Loading ticket...</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-600">티켓 로딩 중...</div>;
   }
 
   if (error && !ticket) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
-          <h2 className="mb-2 text-center text-xl font-bold">Error</h2>
+          <h2 className="mb-2 text-center text-xl font-bold">오류</h2>
           <p className="mb-6 text-center text-gray-600">{error}</p>
           <button
             onClick={() => router.push('/tickets')}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
-            Back to tickets
+            티켓 목록으로
           </button>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function TicketDetailPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <button onClick={() => router.push('/tickets')} className="text-sm text-gray-600 hover:text-gray-900">
-          Back to tickets
+          티켓 목록으로
         </button>
 
         {error && (
@@ -197,7 +197,7 @@ export default function TicketDetailPage() {
                 onClick={() => setIsEditing(!isEditing)}
                 className="rounded-md border border-blue-600 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
               >
-                {isEditing ? 'Cancel' : 'Edit'}
+                {isEditing ? '취소' : '편집'}
               </button>
             )}
           </div>
@@ -206,30 +206,30 @@ export default function TicketDetailPage() {
             <div className="mt-4 border-t pt-4">
               <div className="mb-4 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Status</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">상태</label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as TicketStatus)}
                     className="w-full rounded-md border border-gray-300 px-3 py-2"
                   >
-                    <option value="open">Open</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="on_hold">On hold</option>
-                    <option value="closed">Closed</option>
+                    <option value="open">열림</option>
+                    <option value="in_progress">진행 중</option>
+                    <option value="resolved">해결됨</option>
+                    <option value="on_hold">대기 중</option>
+                    <option value="closed">닫힘</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Priority</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">우선순위</label>
                   <select
                     value={editPriority}
                     onChange={(e) => setEditPriority(e.target.value as TicketPriority)}
                     className="w-full rounded-md border border-gray-300 px-3 py-2"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
+                    <option value="low">낮음</option>
+                    <option value="medium">중간</option>
+                    <option value="high">높음</option>
+                    <option value="urgent">긴급</option>
                   </select>
                 </div>
               </div>
@@ -238,39 +238,39 @@ export default function TicketDetailPage() {
                 disabled={submittingUpdate}
                 className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {submittingUpdate ? 'Saving...' : 'Save changes'}
+                {submittingUpdate ? '저장 중...' : '변경사항 저장'}
               </button>
             </div>
           )}
 
           <div className="mt-6 grid gap-4 border-t pt-6 md:grid-cols-2">
             <div>
-              <p className="text-sm text-gray-500">Requester</p>
+              <p className="text-sm text-gray-500">요청자</p>
               <p className="font-medium">{ticket.requester_name}</p>
               {ticket.requester_email && <p className="text-sm text-gray-600">{ticket.requester_email}</p>}
             </div>
             <div>
-              <p className="text-sm text-gray-500">Assignee</p>
-              <p className="font-medium">{ticket.assignee_name || 'Unassigned'}</p>
+              <p className="text-sm text-gray-500">담당자</p>
+              <p className="font-medium">{ticket.assignee_name || '미할당'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Created</p>
+              <p className="text-sm text-gray-500">생성일</p>
               <p className="font-medium">{formatDate(ticket.created_at)}</p>
             </div>
             {ticket.resolved_at && (
               <div>
-                <p className="text-sm text-gray-500">Resolved</p>
+                <p className="text-sm text-gray-500">해결일</p>
                 <p className="font-medium">{formatDate(ticket.resolved_at)}</p>
               </div>
             )}
             {ticket.session_id && (
               <div className="md:col-span-2">
-                <p className="mb-1 text-sm text-gray-500">Related chat session</p>
+                <p className="mb-1 text-sm text-gray-500">관련 채팅 세션</p>
                 <button
                   onClick={() => router.push(`/chat?session=${ticket.session_id}`)}
                   className="text-sm text-blue-600 underline hover:text-blue-700"
                 >
-                  Open related chat
+                  관련 채팅 열기
                 </button>
               </div>
             )}
@@ -278,16 +278,16 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold">Description</h2>
+          <h2 className="mb-3 text-lg font-semibold">설명</h2>
           <p className="whitespace-pre-wrap text-gray-700">{ticket.description}</p>
         </div>
 
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Comments ({ticket.comments.length})</h2>
+          <h2 className="mb-4 text-lg font-semibold">댓글 ({ticket.comments.length})</h2>
 
           <div className="mb-6 space-y-4">
             {ticket.comments.length === 0 ? (
-              <p className="py-8 text-center text-gray-500">No comments yet.</p>
+              <p className="py-8 text-center text-gray-500">아직 댓글이 없습니다.</p>
             ) : (
               ticket.comments.map((comment) => (
                 <div
@@ -298,9 +298,9 @@ export default function TicketDetailPage() {
                 >
                   <div className="mb-2 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{comment.author_name || 'Unknown'}</span>
+                      <span className="font-medium text-gray-900">{comment.author_name || '알 수 없음'}</span>
                       {comment.is_internal && (
-                        <span className="rounded bg-yellow-200 px-2 py-0.5 text-xs text-yellow-800">Internal</span>
+                        <span className="rounded bg-yellow-200 px-2 py-0.5 text-xs text-yellow-800">내부</span>
                       )}
                     </div>
                     <span className="text-sm text-gray-500">{formatDate(comment.created_at)}</span>
@@ -315,7 +315,7 @@ export default function TicketDetailPage() {
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
+              placeholder="댓글을 작성하세요..."
               rows={4}
               className="mb-3 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -329,7 +329,7 @@ export default function TicketDetailPage() {
                       onChange={(e) => setIsInternal(e.target.checked)}
                       className="rounded"
                     />
-                    Internal note
+                    내부 노트
                   </label>
                 )}
               </div>
@@ -338,7 +338,7 @@ export default function TicketDetailPage() {
                 disabled={submittingComment || !commentText.trim()}
                 className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {submittingComment ? 'Posting...' : 'Add comment'}
+                {submittingComment ? '작성 중...' : '댓글 추가'}
               </button>
             </div>
           </form>

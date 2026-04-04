@@ -18,7 +18,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Streaming chat hook
-  const { isStreaming, streamingMessage, sendStreamingMessage, resetStreamingMessage } = useStreamingChat()
+  const { isStreaming, streamingMessage, sendStreamingMessage, cancelStreaming, resetStreamingMessage } = useStreamingChat()
 
   // Memoize current session title to avoid repeated array search on every render
   const currentSessionTitle = useMemo(
@@ -317,13 +317,23 @@ export default function ChatPage() {
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSending || isStreaming}
               />
-              <button
-                type="submit"
-                disabled={isSending || isStreaming || !inputMessage.trim()}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isStreaming ? "답변 생성 중..." : isSending ? "전송 중..." : "전송"}
-              </button>
+              {isStreaming ? (
+                <button
+                  type="button"
+                  onClick={cancelStreaming}
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
+                >
+                  취소
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSending || !inputMessage.trim()}
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSending ? "전송 중..." : "전송"}
+                </button>
+              )}
             </div>
           </form>
         </div>
