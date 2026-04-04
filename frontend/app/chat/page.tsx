@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { chatApi, ticketApi, ApiError, type ChatSession, type ChatMessage } from "@/lib/api"
 import { useStreamingChat } from "@/hooks/useStreamingChat"
@@ -19,6 +19,12 @@ export default function ChatPage() {
 
   // Streaming chat hook
   const { isStreaming, streamingMessage, sendStreamingMessage, resetStreamingMessage } = useStreamingChat()
+
+  // Memoize current session title to avoid repeated array search on every render
+  const currentSessionTitle = useMemo(
+    () => sessions.find(s => s.id === currentSessionId)?.title || "현재 대화",
+    [sessions, currentSessionId]
+  )
 
   // Load sessions on mount
   useEffect(() => {
@@ -56,7 +62,7 @@ export default function ChatPage() {
       if (err instanceof ApiError) {
         setError(err.message)
       } else {
-        setError("Failed to load messages")
+        setError("메시지를 불러오는데 실패했습니다")
       }
     } finally {
       setIsLoading(false)
@@ -108,11 +114,7 @@ export default function ChatPage() {
             setMessages((prev) => [...prev, partialAssistantMessage])
           }
 
-          if (err instanceof ApiError) {
-            setError(`Streaming error: ${err.message}`)
-          } else {
-            setError(`Streaming error: ${err.message}`)
-          }
+          setError(`답변 생성 오류: ${err.message}`)
         },
       })
 
@@ -131,7 +133,7 @@ export default function ChatPage() {
         if (err instanceof ApiError) {
           setError(err.message)
         } else {
-          setError("Failed to send message")
+          setError("메시지 전송에 실패했습니다")
         }
       }
     } finally {
@@ -164,7 +166,7 @@ export default function ChatPage() {
       if (err instanceof ApiError) {
         setError(err.message)
       } else {
-        setError("Failed to create ticket")
+        setError("티켓 생성에 실패했습니다")
       }
     } finally {
       setIsCreatingTicket(false)
@@ -180,13 +182,13 @@ export default function ChatPage() {
             onClick={startNewChat}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
           >
-            + New Chat
+            + 새 대화
           </button>
         </div>
         <div className="p-2">
           {sessions.length === 0 ? (
             <div className="text-center py-8 text-gray-500 text-sm">
-              No conversations yet
+              아직 대화가 없습니다
             </div>
           ) : (
             sessions.map((session) => (
@@ -205,7 +207,7 @@ export default function ChatPage() {
                 <div className="text-xs text-gray-500 mt-1">
                   {new Date(session.updated_at).toLocaleDateString()}
                   {session.is_resolved && (
-                    <span className="ml-2 text-green-600">✓ Resolved</span>
+                    <span className="ml-2 text-green-600">✓ 해결됨</span>
                   )}
                 </div>
               </button>
@@ -221,7 +223,7 @@ export default function ChatPage() {
           <div className="bg-white border-b border-gray-200 px-4 py-3">
             <div className="max-w-3xl mx-auto flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                {sessions.find(s => s.id === currentSessionId)?.title || "Current Conversation"}
+                {currentSessionTitle}
               </div>
               <button
                 onClick={handleCreateTicket}
@@ -240,12 +242,13 @@ export default function ChatPage() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500">
-              Loading messages...
+            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2"></div>
+              메시지 로딩 중...
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {currentSessionId ? "No messages yet" : "Start a new conversation"}
+              {currentSessionId ? "아직 메시지가 없습니다" : "새 대화를 시작하세요"}
             </div>
           ) : (
                 <div className="max-w-3xl mx-auto space-y-4">
@@ -284,7 +287,7 @@ export default function ChatPage() {
                         <div className="whitespace-pre-wrap">{streamingMessage}</div>
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                           <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                          Streaming...
+                          답변 생성 중...
                         </div>
                       </div>
                     </div>
@@ -310,7 +313,7 @@ export default function ChatPage() {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your IT question..."
+                placeholder="IT 문의사항을 입력하세요..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={isSending || isStreaming}
               />
@@ -319,7 +322,7 @@ export default function ChatPage() {
                 disabled={isSending || isStreaming || !inputMessage.trim()}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isStreaming ? "Streaming..." : isSending ? "Sending..." : "Send"}
+                {isStreaming ? "답변 생성 중..." : isSending ? "전송 중..." : "전송"}
               </button>
             </div>
           </form>
