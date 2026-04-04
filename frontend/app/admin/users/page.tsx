@@ -32,7 +32,7 @@ export default function UsersPage() {
       setTotal(data.total)
       setError(null)
     } catch (err: any) {
-      setError(err.message || "Failed to load users")
+      setError(err.message || "사용자를 불러오는데 실패했습니다")
     } finally {
       setLoading(false)
     }
@@ -57,22 +57,22 @@ export default function UsersPage() {
       setSelectedUser(null)
       loadUsers()
     } catch (err: any) {
-      alert(`Failed to update user: ${err.message}`)
+      alert(`사용자 업데이트 실패: ${err.message}`)
     }
   }
 
   const totalPages = Math.ceil(total / pageSize)
 
   if (loading && users.length === 0) {
-    return <div className="text-center py-8">Loading users...</div>
+    return <div className="text-center py-8">사용자 로딩 중...</div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">사용자 관리</h2>
         <div className="text-sm text-gray-600">
-          Total: {total} users
+          전체: {total}명
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function UsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role
+              역할
             </label>
             <select
               value={roleFilter}
@@ -91,15 +91,15 @@ export default function UsersPage() {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
-              <option value="">All Roles</option>
-              <option value="employee">Employee</option>
-              <option value="it_staff">IT Staff</option>
-              <option value="admin">Admin</option>
+              <option value="">전체 역할</option>
+              <option value="employee">직원</option>
+              <option value="it_staff">IT 담당자</option>
+              <option value="admin">관리자</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
+              상태
             </label>
             <select
               value={activeFilter}
@@ -109,9 +109,9 @@ export default function UsersPage() {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
-              <option value="">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">전체 상태</option>
+              <option value="true">활성</option>
+              <option value="false">비활성</option>
             </select>
           </div>
         </div>
@@ -129,25 +129,25 @@ export default function UsersPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Employee ID
+                사번
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Name
+                이름
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Email
+                이메일
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Role
+                역할
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Department
+                부서
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
+                상태
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
+                작업
               </th>
             </tr>
           </thead>
@@ -183,7 +183,7 @@ export default function UsersPage() {
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                   }`}>
-                    {user.is_active ? "Active" : "Inactive"}
+                    {user.is_active ? "활성" : "비활성"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -191,7 +191,7 @@ export default function UsersPage() {
                     onClick={() => handleEdit(user)}
                     className="text-blue-600 hover:text-blue-800"
                   >
-                    Edit
+                    편집
                   </button>
                 </td>
               </tr>
@@ -208,17 +208,17 @@ export default function UsersPage() {
             disabled={page === 1}
             className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            Previous
+            이전
           </button>
           <span className="px-3 py-1">
-            Page {page} of {totalPages}
+            {page}/{totalPages} 페이지
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
             className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            Next
+            다음
           </button>
         </div>
       )}
@@ -228,33 +228,33 @@ export default function UsersPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">
-              Edit User: {selectedUser.full_name}
+              사용자 편집: {selectedUser.full_name}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Role
+                  역할
                 </label>
                 <select
                   value={editData.role}
                   onChange={(e) => setEditData({ ...editData, role: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
-                  <option value="employee">Employee</option>
-                  <option value="it_staff">IT Staff</option>
-                  <option value="admin">Admin</option>
+                  <option value="employee">직원</option>
+                  <option value="it_staff">IT 담당자</option>
+                  <option value="admin">관리자</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Department
+                  부서
                 </label>
                 <input
                   type="text"
                   value={editData.department}
                   onChange={(e) => setEditData({ ...editData, department: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="IT Support"
+                  placeholder="IT 지원팀"
                 />
               </div>
               <div className="flex items-center">
@@ -265,7 +265,7 @@ export default function UsersPage() {
                   className="mr-2"
                 />
                 <label className="text-sm font-medium text-gray-700">
-                  Active
+                  활성
                 </label>
               </div>
             </div>
@@ -277,13 +277,13 @@ export default function UsersPage() {
                 }}
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
               >
-                Cancel
+                취소
               </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Save
+                저장
               </button>
             </div>
           </div>

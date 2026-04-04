@@ -23,7 +23,7 @@ export default function SettingsPage() {
       setEditData(data)
       setError(null)
     } catch (err: any) {
-      setError(err.message || "Failed to load settings")
+      setError(err.message || "설정을 불러오는데 실패했습니다")
     } finally {
       setLoading(false)
     }
@@ -39,7 +39,7 @@ export default function SettingsPage() {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      setError(err.message || "Failed to save settings")
+      setError(err.message || "설정 저장에 실패했습니다")
     } finally {
       setSaving(false)
     }
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading settings...</div>
+    return <div className="text-center py-8">설정 로딩 중...</div>
   }
 
   if (error && !settings) {
@@ -66,10 +66,10 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">System Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900">시스템 설정</h2>
         {success && (
           <div className="bg-green-50 text-green-700 px-4 py-2 rounded-md text-sm">
-            Settings saved successfully
+            설정이 저장되었습니다
           </div>
         )}
       </div>
@@ -83,12 +83,12 @@ export default function SettingsPage() {
       {/* LLM Settings */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          LLM Configuration
+          LLM 구성
         </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              LLM Provider
+              LLM 제공자
             </label>
             <select
               value={editData.llm_provider || ""}
@@ -99,13 +99,13 @@ export default function SettingsPage() {
               <option value="openai">OpenAI</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Changes apply immediately to new requests
+              변경사항은 새 요청에 즉시 적용됩니다
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Model Name
+              모델 이름
             </label>
             <input
               type="text"
@@ -118,7 +118,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Temperature: {editData.llm_temperature?.toFixed(2) || "0.70"}
+              온도: {editData.llm_temperature?.toFixed(2) || "0.70"}
             </label>
             <input
               type="range"
@@ -130,15 +130,15 @@ export default function SettingsPage() {
               className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Focused (0.0)</span>
-              <span>Balanced (1.0)</span>
-              <span>Creative (2.0)</span>
+              <span>집중적 (0.0)</span>
+              <span>균형적 (1.0)</span>
+              <span>창의적 (2.0)</span>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Tokens
+              최대 토큰
             </label>
             <input
               type="number"
@@ -155,7 +155,7 @@ export default function SettingsPage() {
       {/* RAG Settings */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          RAG Configuration
+          RAG 구성
         </h3>
         <div className="space-y-4">
           <div className="flex items-center">
@@ -166,13 +166,13 @@ export default function SettingsPage() {
               className="mr-2"
             />
             <label className="text-sm font-medium text-gray-700">
-              Enable RAG (Retrieval-Augmented Generation)
+              RAG (검색 증강 생성) 활성화
             </label>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Top K Documents
+              상위 K 문서
             </label>
             <input
               type="number"
@@ -183,7 +183,7 @@ export default function SettingsPage() {
               max="20"
             />
             <p className="mt-1 text-xs text-gray-500">
-              Number of relevant documents to retrieve
+              검색할 관련 문서 수
             </p>
           </div>
         </div>
@@ -195,14 +195,14 @@ export default function SettingsPage() {
           onClick={handleReset}
           className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
         >
-          Reset
+          초기화
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? "저장 중..." : "설정 저장"}
         </button>
       </div>
     </div>
