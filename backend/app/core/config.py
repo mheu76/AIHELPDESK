@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: Literal["claude", "openai", "gemini"] = "claude"
     ANTHROPIC_API_KEY: str = Field(..., description="Required for Claude provider")
     OPENAI_API_KEY: str | None = Field(None, description="Optional for OpenAI provider")
+    GEMINI_API_KEY: str | None = Field(None, description="Optional for Gemini provider")
     LLM_MODEL: str = "claude-sonnet-4-20250514"
     LLM_MAX_TOKENS: int = 1024
     LLM_TEMPERATURE: float = 0.7

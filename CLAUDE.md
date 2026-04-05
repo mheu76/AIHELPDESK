@@ -13,7 +13,7 @@ IT AI Helpdesk is an internal support system that provides AI-powered first-line
 - Frontend: Next.js 14 (App Router) + TypeScript + Tailwind CSS
 - Database: PostgreSQL (primary), SQLite (dev/test)
 - Optional: ChromaDB for vector search (fallback exists)
-- LLM: Anthropic Claude or OpenAI (runtime switchable)
+- LLM: Anthropic Claude, OpenAI, or Google Gemini (runtime switchable)
 
 **Primary Domains:**
 - Auth (JWT-based, employee/IT staff/admin roles)
@@ -145,7 +145,7 @@ frontend/
 ### Runtime Settings Pattern
 
 System settings are persisted in the `system_settings` table and loaded at runtime:
-- LLM provider selection (anthropic/openai)
+- LLM provider selection (claude/openai/gemini)
 - LLM model selection
 - RAG enabled/disabled
 - Temperature, max tokens
@@ -197,9 +197,9 @@ Test DB is SQLite in-memory, isolated per test.
 ```
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/helpdesk
 JWT_SECRET_KEY=<secret>
-ANTHROPIC_API_KEY=<key>   # or OPENAI_API_KEY
-LLM_PROVIDER=anthropic     # or openai (can override at runtime via admin)
-LLM_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_API_KEY=<key>   # or OPENAI_API_KEY or GEMINI_API_KEY
+LLM_PROVIDER=claude        # or openai or gemini (can override at runtime via admin)
+LLM_MODEL=claude-sonnet-4-20250514
 ```
 
 **Frontend:**

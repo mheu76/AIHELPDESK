@@ -22,13 +22,18 @@ engine_kwargs = {
 
 # Only add pool settings for non-SQLite databases
 if not settings.DATABASE_URL.startswith("sqlite"):
-    engine_kwargs.update({
-        "pool_size": settings.DB_POOL_SIZE,
-        "max_overflow": settings.DB_MAX_OVERFLOW,
-        "pool_pre_ping": True,  # Verify connections before using
-        "pool_recycle": 3600,  # Recycle connections after 1 hour
-        "poolclass": QueuePool if not settings.DEBUG else NullPool,
-    })
+    if settings.DEBUG:
+        # DEBUG mode: use NullPool (no pooling parameters)
+        engine_kwargs["poolclass"] = NullPool
+    else:
+        # Production mode: use QueuePool with pooling parameters
+        engine_kwargs.update({
+            "pool_size": settings.DB_POOL_SIZE,
+            "max_overflow": settings.DB_MAX_OVERFLOW,
+            "pool_pre_ping": True,  # Verify connections before using
+            "pool_recycle": 3600,  # Recycle connections after 1 hour
+            "poolclass": QueuePool,
+        })
 else:
     # SQLite uses NullPool (no connection pooling)
     engine_kwargs["poolclass"] = NullPool
